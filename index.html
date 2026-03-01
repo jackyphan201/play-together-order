@@ -6,24 +6,33 @@
 <title>🌿 Theo Dõi Đơn Hàng</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <style>
-/* ===== CSS VARIABLES ===== */
+/* ============================================================
+   CSS VARIABLES
+============================================================ */
 :root {
   --bg:          #0f1a14;
   --surface:     #162019;
   --card:        #1c2a20;
   --border:      #2a3d2e;
-  --accent:      #4ade80;   /* green  — normal totals / stock */
-  --accent-dim:  #22c55e44;
-  --accent2:     #f59e0b;   /* amber  — mutation */
-  --accent2-dim: #f59e0b20;
-  --blue:        #60a5fa;   /* blue   — stock available */
-  --blue-dim:    #60a5fa20;
+  --accent:      #4ade80;
+  --accent-dim:  #22c55e33;
+  --accent2:     #f59e0b;
+  --accent2-dim: #f59e0b22;
+  --blue:        #60a5fa;
+  --blue-dim:    #60a5fa22;
   --danger:      #f87171;
   --danger-dim:  #f8717130;
+  --warn:        #fb923c;
+  --warn-dim:    #fb923c22;
   --text:        #e2f0e6;
   --text-muted:  #7a9e82;
   --radius:      12px;
   --shadow:      0 4px 24px #00000060;
+
+  /* PATCH 4.2 — "ready to complete" glow colors */
+  --ready:       #34d399;
+  --ready-dim:   #34d39922;
+  --ready-glow:  #34d39944;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,457 +45,436 @@ body {
   padding: 24px 16px 88px;
 }
 
-/* ===== HEADER ===== */
-header { text-align: center; margin-bottom: 32px; }
+/* ============================================================
+   LAYOUT
+============================================================ */
+header { text-align: center; margin-bottom: 28px; }
 header h1 {
   font-family: 'Space Mono', monospace;
-  font-size: clamp(1.4rem, 4vw, 2.2rem);
-  color: var(--accent);
-  letter-spacing: -1px;
+  font-size: clamp(1.3rem, 4vw, 2rem);
+  color: var(--accent); letter-spacing: -1px;
   text-shadow: 0 0 24px var(--accent-dim);
 }
-header p { color: var(--text-muted); font-size: 0.85rem; margin-top: 4px; }
+header p { color: var(--text-muted); font-size: 0.82rem; margin-top: 4px; }
 
-/* ===== LAYOUT ===== */
-.container { max-width: 980px; margin: 0 auto; }
+.container { max-width: 1020px; margin: 0 auto; }
+section { margin-bottom: 32px; }
 
-section { margin-bottom: 36px; }
-section > h2 {
+.sec-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.sec-header h2 {
   font-family: 'Space Mono', monospace;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 3px;
-  color: var(--text-muted);
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 3px; color: var(--text-muted); white-space: nowrap;
 }
-section > h2::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.sec-divider { flex: 1; height: 1px; background: var(--border); }
 
-/* ===== COLUMN LEGEND (below heading) ===== */
+/* ============================================================
+   ORDER CARDS
+============================================================ */
+#orders-list { display: flex; flex-direction: column; gap: 10px; }
+
+.order-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  transition: opacity 0.2s, border-color 0.3s, box-shadow 0.3s;
+  box-shadow: var(--shadow); cursor: pointer;
+}
+.order-card.excluded { opacity: 0.45; }
+
+/* Selected order — normal highlight */
+.order-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-dim);
+}
+
+/* PATCH 4.2 — "ready to complete" glow on selected card.
+   When order is completable, border glows green-teal and a badge appears. */
+.order-card.selected.ready {
+  border-color: var(--ready);
+  box-shadow: 0 0 0 2px var(--ready-dim), 0 0 18px var(--ready-glow);
+  animation: readyPulse 2.5s ease-in-out infinite;
+}
+@keyframes readyPulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--ready-dim), 0 0 14px var(--ready-glow); }
+  50%       { box-shadow: 0 0 0 2px var(--ready-dim), 0 0 28px #34d39966; }
+}
+
+/* Ready badge inside card header — hidden by default, shown via JS */
+.ready-badge {
+  display: none;
+  font-size: 0.72rem; font-weight: 800;
+  color: var(--ready);
+  background: var(--ready-dim);
+  border: 1px solid #34d39940;
+  border-radius: 6px;
+  padding: 2px 9px;
+  white-space: nowrap;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.order-card.ready .ready-badge { display: inline-block; }
+
+.card-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border-bottom: 1px solid var(--border);
+  background: #1f2f24; flex-wrap: wrap;
+}
+.card-title {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700; font-size: 0.95rem;
+  color: var(--accent); flex: 1; min-width: 70px;
+}
+.card-controls { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+
+.include-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.76rem; color: var(--text-muted);
+  cursor: pointer; user-select: none;
+}
+.include-label input[type=checkbox] {
+  accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;
+}
+
+.btn-icon {
+  background: none; border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-muted);
+  cursor: pointer; padding: 4px 8px; font-size: 0.82rem;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.btn-icon:hover            { background: var(--border); color: var(--text); }
+.btn-icon.danger:hover     { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
+/* PATCH 4.3 — complete button removed; danger disabled state kept for delete */
+.btn-icon:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.card-body { padding: 10px 14px; }
+.product-line {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 0; border-bottom: 1px solid var(--border);
+  font-size: 0.85rem; flex-wrap: wrap;
+}
+.product-line:last-child { border-bottom: none; }
+.line-product { font-weight: 700; color: var(--text); }
+.line-qty {
+  font-family: 'Space Mono', monospace;
+  color: var(--accent); background: var(--accent-dim);
+  border-radius: 4px; padding: 1px 6px; font-size: 0.78rem;
+}
+.line-mutation {
+  color: var(--accent2); font-size: 0.75rem;
+  background: var(--accent2-dim); border: 1px solid #f59e0b40;
+  border-radius: 4px; padding: 1px 6px;
+}
+.empty-order { color: var(--text-muted); font-size: 0.83rem; font-style: italic; }
+
+/* ============================================================
+   INVENTORY PANEL
+============================================================ */
+.inv-placeholder {
+  text-align: center; color: var(--text-muted);
+  font-size: 0.88rem; padding: 28px;
+  border: 1px dashed var(--border); border-radius: var(--radius);
+}
+.inv-placeholder strong { color: var(--accent); }
+
 .legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 12px;
-  font-size: 0.75rem;
+  display: flex; flex-wrap: wrap; gap: 10px;
+  margin-bottom: 10px; font-size: 0.73rem;
 }
 .legend-item { display: flex; align-items: center; gap: 5px; color: var(--text-muted); }
-.legend-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-/* ===== INVENTORY TABLE ===== */
-/*
- * Columns (desktop):
- *   Sản phẩm | Yêu cầu | ⚡ YC ĐB | Kho | ⚡ Kho ĐB | Còn thiếu | ⚡ ĐB thiếu
- * Click any row to expand inline +/- stepper editors for both stock types.
- */
 .table-wrap {
-  width: 100%;
-  overflow-x: auto;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
+  width: 100%; overflow-x: auto;
+  border-radius: var(--radius); border: 1px solid var(--border);
 }
 
 #inventory-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
+  width: 100%; border-collapse: collapse; font-size: 0.83rem;
 }
 #inventory-table thead th {
   font-family: 'Space Mono', monospace;
-  font-size: 0.66rem;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: var(--text-muted);
-  padding: 9px 12px;
-  text-align: right;
+  font-size: 0.63rem; text-transform: uppercase;
+  letter-spacing: 1.5px; color: var(--text-muted);
+  padding: 8px 10px; text-align: right;
   border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-  background: #131f17;
+  white-space: nowrap; background: #131f17;
+  cursor: pointer; user-select: none;
+  transition: color 0.15s;
 }
-#inventory-table thead th:first-child { text-align: left; }
+#inventory-table thead th:hover { color: var(--text); }
+#inventory-table thead th:first-child { text-align: left; cursor: default; }
+#inventory-table thead th:last-child  { cursor: default; }
+#inventory-table thead th.sort-asc::after  { content: ' ▲'; color: var(--accent); }
+#inventory-table thead th.sort-desc::after { content: ' ▼'; color: var(--accent); }
+
+.inv-section-header td {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem; text-transform: uppercase;
+  letter-spacing: 2px; padding: 6px 10px;
+  color: var(--text-muted); background: #0f1a14;
+  border-bottom: 1px solid var(--border);
+}
 
 #inventory-table tbody tr.inv-row {
   border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: background 0.12s;
+  cursor: pointer; transition: background 0.12s;
 }
-#inventory-table tbody tr.inv-row:last-of-type { border-bottom: none; }
-#inventory-table tbody tr.inv-row:hover   { background: #1e2d22; }
+#inventory-table tbody tr.inv-row:hover    { background: #1e2d22; }
 #inventory-table tbody tr.inv-row.expanded { background: #1e2d22; }
 
 #inventory-table td {
-  padding: 9px 12px;
-  text-align: right;
-  vertical-align: middle;
+  padding: 8px 10px; text-align: right; vertical-align: top;
 }
-#inventory-table td:first-child { text-align: left; }
+#inventory-table td:first-child { text-align: left; vertical-align: middle; }
 
 .inv-name {
-  font-weight: 700;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  white-space: nowrap;
+  font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 6px; white-space: nowrap;
 }
 .inv-expand-icon {
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  transition: transform 0.2s;
-  display: inline-block;
-  flex-shrink: 0;
+  font-size: 0.58rem; color: var(--text-muted);
+  transition: transform 0.2s; display: inline-block; flex-shrink: 0;
 }
 .inv-row.expanded .inv-expand-icon { transform: rotate(90deg); color: var(--accent); }
 
-/* Monospaced value cells */
 .inv-req      { font-family: 'Space Mono', monospace; color: var(--accent);  font-weight: 700; }
 .inv-req-mut  { font-family: 'Space Mono', monospace; color: var(--accent2); font-weight: 700; }
-.inv-stk      { font-family: 'Space Mono', monospace; color: var(--blue); }
-.inv-stk-mut  { font-family: 'Space Mono', monospace; color: var(--accent2); opacity: 0.75; }
 
-/* Gap badges: gap>0 = short (red), gap=0 = even (grey), gap<0 = overstock (green) */
 .gap-badge {
   font-family: 'Space Mono', monospace;
-  font-size: 0.75rem;
-  border-radius: 4px;
-  padding: 2px 7px;
-  font-weight: 700;
-  display: inline-block;
-  white-space: nowrap;
+  font-size: 0.72rem; border-radius: 4px;
+  padding: 2px 6px; font-weight: 700;
+  display: inline-block; white-space: nowrap;
 }
-.gap-warn { background: var(--danger-dim);  color: var(--danger); border: 1px solid #f8717140; }
-.gap-ok   { background: var(--accent-dim);  color: var(--accent); border: 1px solid #4ade8040; }
-.gap-zero { background: #ffffff0d; color: var(--text-muted); border: 1px solid var(--border); }
+.gap-ok      { background: var(--accent-dim);  color: var(--accent); border: 1px solid #4ade8040; }
+.gap-low     { background: var(--warn-dim);    color: var(--warn);   border: 1px solid #fb923c40; }
+.gap-missing { background: var(--danger-dim);  color: var(--danger); border: 1px solid #f8717140; }
+.gap-zero    { background: #ffffff0d; color: var(--text-muted); border: 1px solid var(--border); }
+
+.note-cell        { text-align: left !important; font-size: 0.76rem; max-width: 220px; }
+.note-missing     { color: var(--danger); font-size: 0.72rem; line-height: 1.5; }
+.note-ok          { color: var(--text-muted); font-size: 0.72rem; font-style: italic; }
+.note-viewall-btn {
+  background: none; border: none; color: var(--accent2);
+  font-size: 0.7rem; cursor: pointer; text-decoration: underline; padding: 0; display: inline;
+}
+.note-expanded-list { margin-top: 4px; font-size: 0.71rem; color: var(--text-muted); line-height: 1.6; }
+.note-close-btn {
+  display: inline-block; margin-top: 4px;
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text-muted); font-size: 0.68rem; cursor: pointer; padding: 1px 6px;
+}
+.note-close-btn:hover { color: var(--text); background: var(--border); }
 
 /* Inline editor row */
 tr.inv-editor-row > td {
-  padding: 0;
-  background: #111a14;
+  padding: 0; background: #111a14;
   border-bottom: 2px solid var(--accent-dim);
 }
-.inv-editor {
-  padding: 14px 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
+.inv-editor { padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; }
 
-/* Stock stepper blocks */
 .stock-block {
-  flex: 1;
-  min-width: 180px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px;
 }
 .stock-block-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-weight: 800;
+  font-size: 0.68rem; text-transform: uppercase;
+  letter-spacing: 1.5px; font-weight: 800;
 }
 .stock-block-label.normal   { color: var(--blue); }
 .stock-block-label.mutation { color: var(--accent2); }
 
 .stepper-row { display: flex; align-items: center; gap: 6px; }
 .stepper-btn {
-  background: var(--border);
-  border: none;
-  border-radius: 5px;
-  color: var(--text);
-  cursor: pointer;
-  font-size: 1.05rem;
-  font-weight: 700;
-  width: 30px; height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-  flex-shrink: 0;
+  background: var(--border); border: none; border-radius: 5px;
+  color: var(--text); cursor: pointer;
+  font-size: 1rem; font-weight: 700;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s; flex-shrink: 0;
 }
 .stepper-btn:hover { background: #3a5040; }
 .stepper-input {
-  width: 68px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 5px;
+  width: 60px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 5px;
   color: var(--text);
-  font-family: 'Space Mono', monospace;
-  font-size: 0.9rem;
-  padding: 4px 8px;
-  text-align: center;
-  outline: none;
+  font-family: 'Space Mono', monospace; font-size: 0.88rem;
+  padding: 3px 6px; text-align: center; outline: none;
 }
 .stepper-input:focus { border-color: var(--accent); }
 
-/* ===== ORDER CARDS ===== */
-#orders-list { display: flex; flex-direction: column; gap: 12px; }
+.mut-stock-table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
+.mut-stock-table td { padding: 4px 6px; vertical-align: middle; }
+.mut-stock-table td:first-child { color: var(--accent2); font-weight: 700; white-space: nowrap; min-width: 100px; }
+.mut-stock-table td:last-child  { text-align: right; }
 
-.order-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  transition: opacity 0.25s;
-  box-shadow: var(--shadow);
-}
-.order-card.excluded { opacity: 0.45; }
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  background: #1f2f24;
-  flex-wrap: wrap;
-}
-.card-title {
-  font-family: 'Space Mono', monospace;
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--accent);
-  flex: 1;
-  min-width: 80px;
-}
-.card-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-
-.include-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  user-select: none;
-}
-.include-label input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
-
-.btn-icon {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 5px 9px;
-  font-size: 0.85rem;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-.btn-icon:hover { background: var(--border); color: var(--text); }
-.btn-icon.danger:hover { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
-
-.card-body { padding: 12px 16px; }
-.product-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.87rem;
-  flex-wrap: wrap;
-}
-.product-line:last-child { border-bottom: none; }
-.line-product { font-weight: 700; color: var(--text); }
-.line-qty {
-  font-family: 'Space Mono', monospace;
-  color: var(--accent);
-  background: var(--accent-dim);
-  border-radius: 4px;
-  padding: 1px 7px;
-  font-size: 0.8rem;
-}
-.line-mutation {
-  color: var(--accent2);
-  font-size: 0.77rem;
-  background: var(--accent2-dim);
-  border: 1px solid #f59e0b40;
-  border-radius: 4px;
-  padding: 1px 7px;
-}
-.empty-order { color: var(--text-muted); font-size: 0.85rem; font-style: italic; }
-
-/* ===== FAB ===== */
+/* ============================================================
+   FAB
+============================================================ */
 #add-order-btn {
-  position: fixed;
-  bottom: 28px;
-  right: 28px;
-  width: 56px; height: 56px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #0a1a0d;
-  border: none;
-  font-size: 1.8rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: fixed; bottom: 28px; right: 28px;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #0a1a0d;
+  border: none; font-size: 1.7rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
   box-shadow: 0 4px 20px var(--accent-dim);
   transition: transform 0.15s, box-shadow 0.15s;
-  z-index: 100;
-  line-height: 1;
+  z-index: 100; line-height: 1;
 }
 #add-order-btn:hover { transform: scale(1.1); box-shadow: 0 6px 28px #4ade8088; }
 
-/* ===== MODAL ===== */
+/* ============================================================
+   MODAL — overflow:visible so dropdown popups never clip
+============================================================ */
 .modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: #00000099;
-  z-index: 200;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  display: none; position: fixed; inset: 0;
+  background: #00000099; z-index: 200;
+  align-items: flex-start; justify-content: center;
+  padding: 16px; overflow-y: auto;
 }
 .modal-overlay.open { display: flex; }
 
 .modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  width: 100%;
-  max-width: 600px;
-  max-height: 92vh;
-  display: flex;
-  flex-direction: column;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); width: 100%; max-width: 620px;
+  overflow: visible; /* popup escapes */
+  display: flex; flex-direction: column;
   box-shadow: 0 12px 48px #00000090;
+  margin: auto;
 }
 .modal-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
+  padding: 15px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--surface); position: relative; z-index: 1;
 }
 .modal-header h3 {
   font-family: 'Space Mono', monospace;
-  color: var(--accent);
-  flex: 1;
-  font-size: 1rem;
+  color: var(--accent); flex: 1; font-size: 0.95rem;
 }
 .modal-body {
-  overflow-y: auto;
-  flex: 1;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  overflow: visible; flex: 1;
+  padding: 14px 18px;
+  display: flex; flex-direction: column; gap: 10px;
+  position: relative;
 }
 .modal-footer {
-  padding: 14px 20px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
+  padding: 12px 18px; border-top: 1px solid var(--border);
+  display: flex; gap: 10px; justify-content: flex-end;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--surface); position: relative; z-index: 1;
 }
 
-/* Modal product-line card */
 .modal-line {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 11px;
+  display: flex; flex-direction: column; gap: 8px;
+  position: relative;
 }
-.modal-line-row1 { display: flex; gap: 8px; align-items: center; }
-.modal-line-row2 { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.modal-line-row1 { display: flex; gap: 7px; align-items: center; position: relative; z-index: 2; }
+.modal-line-row2 { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; position: relative; z-index: 1; }
 
-/* Form controls */
-select, input[type=number] {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  padding: 7px 10px;
-  font-family: 'Nunito', sans-serif;
-  font-size: 0.88rem;
-  outline: none;
-  transition: border-color 0.2s;
+/* ============================================================
+   SEARCHABLE DROPDOWN — popup is position:fixed, appended to body
+============================================================ */
+.sd-wrapper { position: relative; flex: 1; min-width: 0; }
+
+.sd-input {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); padding: 7px 30px 7px 10px;
+  font-family: 'Nunito', sans-serif; font-size: 0.86rem;
+  outline: none; cursor: pointer; transition: border-color 0.2s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-select:focus, input[type=number]:focus { border-color: var(--accent); }
-select { cursor: pointer; }
-select option { background: var(--card); }
+.sd-input:focus, .sd-input.active-drop { border-color: var(--accent); }
 
-.select-product { flex: 1; min-width: 0; }
-.input-qty { width: 72px; }
-.select-mutation { flex: 1; min-width: 120px; }
+.sd-arrow {
+  position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+  font-size: 0.58rem; color: var(--text-muted); pointer-events: none;
+}
+
+.sd-popup {
+  position: fixed;
+  background: var(--surface); border: 1px solid var(--accent);
+  border-radius: 8px; z-index: 9999;
+  max-height: 210px; overflow: hidden;
+  box-shadow: 0 8px 24px #00000080;
+  display: flex; flex-direction: column; min-width: 160px;
+}
+.sd-popup:not(.open) { display: none; }
+.sd-popup.open { display: flex; }
+
+.sd-search {
+  flex-shrink: 0; background: var(--bg); border: none;
+  border-bottom: 1px solid var(--border); color: var(--text);
+  padding: 7px 10px; font-family: 'Nunito', sans-serif; font-size: 0.84rem;
+  outline: none; border-radius: 8px 8px 0 0;
+}
+.sd-list { overflow-y: auto; flex: 1; }
+.sd-item { padding: 7px 12px; cursor: pointer; font-size: 0.84rem; color: var(--text); transition: background 0.1s; }
+.sd-item:hover  { background: var(--accent-dim); color: var(--accent); }
+.sd-item.hi     { background: var(--accent-dim); color: var(--accent); font-weight: 700; }
+.sd-item.chosen { font-weight: 700; color: var(--accent); }
+.sd-empty { padding: 10px 12px; color: var(--text-muted); font-size: 0.82rem; font-style: italic; }
+
+.sd-wrapper.mut-wrap { min-width: 130px; }
+
+input[type=number] {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text);
+  padding: 7px 10px; font-family: 'Nunito', sans-serif;
+  font-size: 0.86rem; outline: none; transition: border-color 0.2s;
+}
+input[type=number]:focus { border-color: var(--accent); }
+.input-qty { width: 70px; }
 
 .mutation-check-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  white-space: nowrap;
-  user-select: none;
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.78rem; color: var(--text-muted);
+  cursor: pointer; white-space: nowrap; user-select: none;
 }
 .mutation-check-label input { accent-color: var(--accent2); cursor: pointer; }
 
-/* General buttons */
 .btn {
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-family: 'Nunito', sans-serif;
-  font-size: 0.88rem;
-  font-weight: 700;
-  padding: 8px 18px;
-  transition: opacity 0.15s, transform 0.1s;
+  border: none; border-radius: 6px; cursor: pointer;
+  font-family: 'Nunito', sans-serif; font-size: 0.86rem; font-weight: 700;
+  padding: 8px 16px; transition: opacity 0.15s, transform 0.1s;
 }
-.btn:hover   { opacity: 0.85; }
-.btn:active  { transform: scale(0.97); }
+.btn:hover  { opacity: 0.88; }
+.btn:active { transform: scale(0.97); }
 .btn-primary   { background: var(--accent); color: #0a1a0d; }
 .btn-secondary { background: var(--border); color: var(--text); }
 
 .btn-add-line {
-  background: none;
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-family: 'Nunito', sans-serif;
-  font-size: 0.85rem;
-  padding: 10px;
-  text-align: center;
-  transition: border-color 0.2s, color 0.2s;
-  width: 100%;
+  background: none; border: 1px dashed var(--border);
+  border-radius: 8px; color: var(--text-muted); cursor: pointer;
+  font-family: 'Nunito', sans-serif; font-size: 0.83rem;
+  padding: 9px; text-align: center;
+  transition: border-color 0.2s, color 0.2s; width: 100%;
 }
 .btn-add-line:hover { border-color: var(--accent); color: var(--accent); }
 
-.error-msg { color: var(--danger); font-size: 0.8rem; padding: 6px 0; display: none; }
+.error-msg { color: var(--danger); font-size: 0.78rem; padding: 5px 0; display: none; }
 .error-msg.show { display: block; }
 
 .empty-state {
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  padding: 32px;
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
+  text-align: center; color: var(--text-muted);
+  font-size: 0.88rem; padding: 30px;
+  border: 1px dashed var(--border); border-radius: var(--radius);
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-/* Hide on small screens */
 @media (max-width: 600px) {
   .hide-sm { display: none !important; }
   .modal-line-row1 { flex-wrap: wrap; }
-  .select-product  { min-width: 100%; }
+  .sd-wrapper { min-width: 100%; }
+  .note-cell { max-width: 120px; }
 }
 </style>
 </head>
@@ -494,54 +482,19 @@ select option { background: var(--card); }
 
 <header>
   <h1>🌿 Theo Dõi Đơn Hàng</h1>
-  <p>Quản lý đơn thu thập nông sản</p>
+  <p>Quản lý đơn thu thập nông sản • Web Ver. 4.3</p>
 </header>
 
 <div class="container">
 
   <!-- ============================================================
-       INVENTORY / READINESS PANEL
-       Columns: Sản phẩm | Yêu cầu | ⚡ YC ĐB | Kho | ⚡ Kho ĐB | Còn thiếu | ⚡ ĐB thiếu
-       Click any product row → expands inline +/- stepper editors
-       for Normal Stock and Mutation Stock independently.
+       SECTION 1: ORDERS (top)
   ============================================================ -->
   <section>
-    <h2>Tổng cần &amp; Kho hàng</h2>
-
-    <!-- Legend -->
-    <div class="legend">
-      <span class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span> Yêu cầu (thường)</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--accent2)"></span> Yêu cầu đột biến</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span> Kho thường</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--danger)"></span> Còn thiếu</span>
-      <span class="legend-item" style="color:var(--text-muted); font-size:0.72rem;">▶ Click hàng để chỉnh kho</span>
+    <div class="sec-header">
+      <h2>Các đơn hàng</h2>
+      <div class="sec-divider"></div>
     </div>
-
-    <div class="table-wrap">
-      <table id="inventory-table">
-        <thead>
-          <tr>
-            <th>Sản phẩm</th>
-            <th title="Tổng số lượng yêu cầu từ các đơn được tính">Yêu cầu</th>
-            <th class="hide-sm" title="Yêu cầu có đột biến (bất kỳ loại)">⚡ YC ĐB</th>
-            <th title="Kho thường hiện có">Kho</th>
-            <th class="hide-sm" title="Kho đột biến hiện có">⚡ Kho ĐB</th>
-            <th title="Còn thiếu = Yêu cầu − Kho thường">Còn thiếu</th>
-            <th class="hide-sm" title="ĐB thiếu = YC ĐB − Kho ĐB">⚡ ĐB thiếu</th>
-          </tr>
-        </thead>
-        <tbody id="inventory-tbody">
-          <!-- Populated dynamically by renderInventory() -->
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- ============================================================
-       ORDERS LIST
-  ============================================================ -->
-  <section>
-    <h2>Các đơn hàng</h2>
     <div id="orders-list">
       <div class="empty-state" id="empty-state">
         Chưa có đơn nào. Nhấn <strong>+</strong> để tạo đơn đầu tiên!
@@ -549,9 +502,51 @@ select option { background: var(--card); }
     </div>
   </section>
 
+  <!-- ============================================================
+       SECTION 2: INVENTORY DASHBOARD
+       Visible only when an order is selected.
+       4 columns: Sản phẩm | Yêu cầu | Còn thiếu | Ghi chú
+       Rows split: std (stdReq>0) vs mut (reqMut>0), same product can appear in both.
+  ============================================================ -->
+  <section>
+    <div class="sec-header">
+      <h2>Tổng cần &amp; Kho hàng</h2>
+      <div class="sec-divider"></div>
+    </div>
+
+    <div id="inv-placeholder" class="inv-placeholder">
+      Chọn 1 đơn để xem <strong>Tổng cần &amp; Tồn kho</strong>
+    </div>
+
+    <div id="inv-panel" style="display:none">
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span> Yêu cầu</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--accent2)"></span> Yêu cầu ĐB</span>
+        <span class="legend-item"><span class="gap-badge gap-ok"      style="font-size:0.65rem;padding:1px 5px">OK</span></span>
+        <span class="legend-item"><span class="gap-badge gap-low"     style="font-size:0.65rem;padding:1px 5px">Ít</span></span>
+        <span class="legend-item"><span class="gap-badge gap-missing" style="font-size:0.65rem;padding:1px 5px">Thiếu</span></span>
+        <span class="legend-item" style="font-size:0.7rem; color:var(--text-muted)">▶ Click hàng để chỉnh kho</span>
+      </div>
+
+      <div class="table-wrap">
+        <table id="inventory-table">
+          <thead>
+            <tr>
+              <th>Sản phẩm</th>
+              <th data-col="req" title="Tổng yêu cầu / Tổng YC ĐB">Yêu cầu</th>
+              <th data-col="gap" title="Còn thiếu = Yêu cầu − Kho">Còn thiếu</th>
+              <th class="hide-sm" title="Ghi chú (thiếu loại ĐB nào)">Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
 </div>
 
-<!-- Floating Action Button -->
+<!-- FAB -->
 <button id="add-order-btn" title="Tạo đơn mới">+</button>
 
 <!-- Add/Edit Order Modal -->
@@ -561,7 +556,7 @@ select option { background: var(--card); }
       <h3 id="modal-title">Tạo đơn mới</h3>
     </div>
     <div class="modal-body" id="modal-body"></div>
-    <p class="error-msg" id="modal-error" style="margin: 0 20px;"></p>
+    <p class="error-msg" id="modal-error" style="margin: 0 18px;"></p>
     <div class="modal-footer">
       <button class="btn btn-secondary" id="modal-cancel">Hủy</button>
       <button class="btn btn-primary"   id="modal-save">Lưu</button>
@@ -570,299 +565,872 @@ select option { background: var(--card); }
 </div>
 
 <script>
+'use strict';
+
 // ============================================================
-// PRODUCT POOL
-// To add a product: append a string to the array below.
-// The list is always re-sorted on load via .sort().
-// Added this version: "Mãng Cầu", "Đu đủ"
+// PRODUCT POOL  — auto-sorted A–Z (Vietnamese)
 // ============================================================
 const PRODUCT_LIST = [
-  "Bắp", "Bí Ngô", "Cà Chua", "Cà Rốt", "Chanh",
-  "Dâu Tây", "Đậu", "Dừa", "Dưa Hấu", "Đu đủ",
-  "Khế", "Mãng Cầu", "Nấm", "Nhân Sâm", "Nho",
-  "Rau Chân Vịt", "Rau Xà Lách",
-  "Sầu Riêng", "Táo", "Táo Đường", "Trái Sung",
-  "Việt Quất", "Xoài", "Xương Rồng"
+  "Bắp","Bí Ngô","Cà Chua","Cà Rốt","Chanh",
+  "Dâu Tây","Đậu","Dừa","Dưa Hấu","Đu đủ",
+  "Khế","Mãng Cầu","Nấm","Nhân Sâm","Nho",
+  "Rau Chân Vịt","Rau Xà Lách",
+  "Sầu Riêng","Táo","Táo Đường","Trái Sung",
+  "Việt Quất","Xoài","Xương Rồng"
 ].sort((a, b) => a.localeCompare(b, 'vi'));
 
 // ============================================================
-// MUTATION LIST (one per product-line in an order)
+// MUTATION LIST  — auto-sorted A–Z
 // ============================================================
 const MUTATIONS = [
-  "Ánh vàng", "Ánh trắng", "Ảo ảnh", "Ẩm ướt",
-  "Băng", "Bướm",
-  "Cát", "Cầu vồng", "Cực quang",
-  "Đèn trời",
-  "Gió",
-  "Khí lạnh", "Khô",
-  "Nguyền rủa", "Nhiễm điện",
-  "Pháo hoa",
-  "Sương"
-];
+  "Ánh vàng","Ánh trắng","Ảo ảnh","Ẩm ướt",
+  "Băng","Bướm",
+  "Cát","Cầu vồng","Cực quang",
+  "Đèn trời","Gió",
+  "Khí lạnh","Khô",
+  "Nguyền rủa","Nhiễm điện",
+  "Pháo hoa","Sương"
+].sort((a, b) => a.localeCompare(b, 'vi'));
 
 // ============================================================
-// APP STATE  (no persistence — all resets on refresh)
+// APP STATE  (no persistence — resets on refresh)
 // ============================================================
-let orders    = [];   // [{ id, name, included, lines:[{product, qty, mutation}] }]
-let nextId    = 1;    // incremental order counter
-let editingId = null; // null = new order, number = editing existing
+let orders     = [];   // [{ id, name, included, lines:[{product,qty,mutation}] }]
+let nextId     = 1;
+let editingId  = null; // null = new order, number = editing existing
+let selectedId = null; // which order drives the dashboard
 
 /*
  * STOCK STATE
- * Keyed by product name: stock[p] = { normal: Number, mutation: Number }
- *   normal   = regular stock for non-mutated requests
- *   mutation = stock for mutated requests (tracked independently)
- * Both values are clamped to >= 0.
+ * stock[product] = {
+ *   normal   : Number,                — regular stock
+ *   mutation : { [mutName]: Number }  — per-mutation-type stock
+ * }
+ * All values clamped >= 0.
  */
 const stock = {};
-PRODUCT_LIST.forEach(p => { stock[p] = { normal: 0, mutation: 0 }; });
+function initStockForProduct(p) {
+  if (stock[p]) return;
+  stock[p] = { normal: 0, mutation: {} };
+  MUTATIONS.forEach(m => { stock[p].mutation[m] = 0; });
+}
+PRODUCT_LIST.forEach(initStockForProduct);
+
+// Dashboard sort state
+let sortState = { col: null, dir: null };
 
 // ============================================================
-// COMPUTE TOTALS  (from included orders only)
-// Returns { [product]: { req: Number, reqMut: Number } }
-//   req    = total qty across all lines (mutation or not)
-//   reqMut = total qty where a mutation is selected (any type)
+// HELPERS
 // ============================================================
+
+/** Sum all mutation-type stock for a product */
+function totalMutStock(p) {
+  return MUTATIONS.reduce((s, m) => s + (stock[p].mutation[m] || 0), 0);
+}
+
+/**
+ * computeTotals()
+ * Aggregates across ALL included orders.
+ * Returns { [product]: { req, reqMut, stdReq, reqByMut } }
+ */
 function computeTotals() {
   const totals = {};
-  PRODUCT_LIST.forEach(p => { totals[p] = { req: 0, reqMut: 0 }; });
+  PRODUCT_LIST.forEach(p => {
+    totals[p] = { req: 0, reqMut: 0, stdReq: 0, reqByMut: {} };
+    MUTATIONS.forEach(m => { totals[p].reqByMut[m] = 0; });
+  });
 
   orders
     .filter(o => o.included)
     .forEach(o => o.lines.forEach(l => {
-      if (l.qty > 0) {
-        totals[l.product].req += l.qty;
-        if (l.mutation) totals[l.product].reqMut += l.qty;
+      if (l.qty <= 0) return;
+      totals[l.product].req += l.qty;
+      if (l.mutation) {
+        totals[l.product].reqMut += l.qty;
+        totals[l.product].reqByMut[l.mutation] =
+          (totals[l.product].reqByMut[l.mutation] || 0) + l.qty;
       }
     }));
+
+  PRODUCT_LIST.forEach(p => {
+    totals[p].stdReq = totals[p].req - totals[p].reqMut;
+  });
 
   return totals;
 }
 
+/**
+ * getDashboardProducts(totals)
+ * Selected order's products first, then others with req > 0.
+ */
+function getDashboardProducts(totals) {
+  const selProds = [];
+  const selSet   = new Set();
+
+  if (selectedId) {
+    const order = orders.find(o => o.id === selectedId);
+    if (order) {
+      order.lines.forEach(l => {
+        if (!selSet.has(l.product)) { selProds.push(l.product); selSet.add(l.product); }
+      });
+    }
+  }
+
+  const others = PRODUCT_LIST.filter(p => !selSet.has(p) && (totals[p] || {}).req > 0);
+  return [...selProds, ...others];
+}
+
+/**
+ * gapBadge(req, stk) — 3-level semantic badge
+ */
+function gapBadge(req, stk) {
+  if (req === 0) return `<span class="gap-badge gap-zero">—</span>`;
+  const gap = req - stk;
+  if (gap <= 0)  return `<span class="gap-badge gap-ok">▼ ${Math.abs(gap) || 'OK'}</span>`;
+  if (stk === 0) return `<span class="gap-badge gap-missing">▲ ${gap}</span>`;
+  return                `<span class="gap-badge gap-low">▲ ${gap}</span>`;
+}
+
 // ============================================================
-// GAP BADGE HELPER
-// gap > 0 → still short (red ▲), gap < 0 → overstock (green ▼), gap = 0 → even
+// PATCH 4.2 — isOrderCompletable(orderId)
+//
+// An order is "ready to complete" when EVERY line in it is
+// fully covered by current warehouse stock:
+//   - Standard line (no mutation): stock[p].normal >= qty
+//   - Mutation line: stock[p].mutation[mutationType] >= qty
+//
+// Returns true only if ALL lines pass AND the order has >= 1 line.
 // ============================================================
-function gapBadge(gap) {
-  if (gap === 0) return `<span class="gap-badge gap-zero">±0</span>`;
-  if (gap > 0)   return `<span class="gap-badge gap-warn">▲ ${gap}</span>`;
-  return             `<span class="gap-badge gap-ok">▼ ${Math.abs(gap)}</span>`;
+function isOrderCompletable(orderId) {
+  const order = orders.find(o => o.id === orderId);
+  if (!order || order.lines.length === 0) return false;
+
+  return order.lines.every(l => {
+    if (l.qty <= 0) return true; // zero-qty lines don't block
+    initStockForProduct(l.product); // safety
+    if (l.mutation) {
+      return (stock[l.product].mutation[l.mutation] || 0) >= l.qty;
+    } else {
+      return stock[l.product].normal >= l.qty;
+    }
+  });
+}
+
+/**
+ * updateReadyState()
+ * Called after any stock change or order change.
+ * Adds/removes .ready class + updates badge on all order cards.
+ * Also used by refreshDataRow to update live as inventory changes.
+ */
+function updateReadyState() {
+  document.querySelectorAll('.order-card').forEach(card => {
+    const oid     = parseInt(card.dataset.id, 10);
+    const ready   = isOrderCompletable(oid);
+    card.classList.toggle('ready', ready);
+
+    // Ensure badge element exists (it is injected during renderOrders)
+    const badge = card.querySelector('.ready-badge');
+    if (badge) badge.style.display = ready ? '' : 'none';
+  });
+}
+
+// ============================================================
+// SEARCHABLE DROPDOWN COMPONENT
+// Popup appended to <body> + positioned via getBoundingClientRect()
+// — never clipped by any ancestor overflow.
+// Returns { wrapper, getValue, setValue }
+// ============================================================
+function createSearchableDropdown(items, currentValue, placeholder) {
+  placeholder = placeholder || '— chọn —';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'sd-wrapper';
+
+  const display = document.createElement('input');
+  display.type = 'text';
+  display.className = 'sd-input';
+  display.readOnly = true;
+  display.placeholder = placeholder;
+  display.value = currentValue || '';
+
+  const arrow = document.createElement('span');
+  arrow.className = 'sd-arrow';
+  arrow.textContent = '▼';
+
+  // Popup lives on <body> to escape overflow contexts
+  const popup = document.createElement('div');
+  popup.className = 'sd-popup';
+  document.body.appendChild(popup);
+
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.className = 'sd-search';
+  searchInput.placeholder = 'Tìm kiếm…';
+
+  const listEl = document.createElement('div');
+  listEl.className = 'sd-list';
+
+  popup.appendChild(searchInput);
+  popup.appendChild(listEl);
+  wrapper.appendChild(display);
+  wrapper.appendChild(arrow);
+
+  let currentVal    = currentValue || null;
+  let filteredItems = [...items];
+  let hiIdx         = -1;
+
+  function positionPopup() {
+    const rect = display.getBoundingClientRect();
+    popup.style.left  = rect.left + 'px';
+    popup.style.top   = (rect.bottom + 4) + 'px';
+    popup.style.width = rect.width + 'px';
+  }
+
+  function renderList() {
+    listEl.innerHTML = '';
+    if (filteredItems.length === 0) {
+      const e = document.createElement('div');
+      e.className = 'sd-empty';
+      e.textContent = 'Không tìm thấy';
+      listEl.appendChild(e);
+      return;
+    }
+    filteredItems.forEach((item, idx) => {
+      const el = document.createElement('div');
+      el.className = 'sd-item'
+        + (item === currentVal ? ' chosen' : '')
+        + (idx === hiIdx ? ' hi' : '');
+      el.textContent = item;
+      el.addEventListener('mousedown', e => { e.preventDefault(); selectItem(item); });
+      listEl.appendChild(el);
+    });
+  }
+
+  function filter(q) {
+    filteredItems = q.trim()
+      ? items.filter(i => i.toLowerCase().includes(q.toLowerCase()))
+      : [...items];
+    hiIdx = -1;
+    renderList();
+  }
+
+  function open() {
+    document.querySelectorAll('.sd-popup.open').forEach(p => {
+      if (p !== popup) p.classList.remove('open');
+    });
+    positionPopup();
+    popup.classList.add('open');
+    display.classList.add('active-drop');
+    searchInput.value = '';
+    filter('');
+    setTimeout(() => {
+      const chosen = listEl.querySelector('.chosen');
+      if (chosen) chosen.scrollIntoView({ block: 'nearest' });
+      searchInput.focus();
+    }, 0);
+  }
+
+  function close() {
+    popup.classList.remove('open');
+    display.classList.remove('active-drop');
+  }
+
+  function selectItem(item) {
+    currentVal = item;
+    display.value = item;
+    close();
+  }
+
+  function getValue() { return currentVal; }
+  function setValue(v) { currentVal = v; display.value = v || ''; }
+
+  display.addEventListener('click', () => {
+    popup.classList.contains('open') ? close() : open();
+  });
+
+  searchInput.addEventListener('input', () => filter(searchInput.value));
+
+  searchInput.addEventListener('keydown', e => {
+    const els = [...listEl.querySelectorAll('.sd-item')];
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      hiIdx = Math.min(hiIdx + 1, filteredItems.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      hiIdx = Math.max(hiIdx - 1, 0);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (hiIdx >= 0 && filteredItems[hiIdx]) selectItem(filteredItems[hiIdx]);
+      return;
+    } else if (e.key === 'Escape') {
+      close(); return;
+    }
+    els.forEach((el, i) => {
+      el.classList.toggle('hi', i === hiIdx);
+      el.classList.remove('chosen');
+    });
+    if (els[hiIdx]) els[hiIdx].scrollIntoView({ block: 'nearest' });
+  });
+
+  window.addEventListener('scroll', () => { if (popup.classList.contains('open')) positionPopup(); }, true);
+  window.addEventListener('resize', () => { if (popup.classList.contains('open')) positionPopup(); });
+
+  document.addEventListener('mousedown', e => {
+    if (!wrapper.contains(e.target) && !popup.contains(e.target)) close();
+  }, true);
+
+  // Cleanup popup from body when wrapper leaves DOM
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(wrapper)) {
+      popup.remove();
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  return { wrapper, getValue, setValue };
 }
 
 // ============================================================
 // RENDER INVENTORY TABLE
-// Each product = 1 clickable data row + 1 hidden editor row.
-// Opening state is preserved across full re-renders.
+// Columns: Sản phẩm | Yêu cầu | Còn thiếu | Ghi chú
+// Sections: 📦 Standard (stdReq>0) and ⚡ Mutation (reqMut>0)
+// A product with both appears in both sections as separate rows.
 // ============================================================
 function renderInventory() {
-  const totals = computeTotals();
-  const tbody  = document.getElementById('inventory-tbody');
+  const hasSelected = selectedId !== null && orders.some(o => o.id === selectedId);
+  document.getElementById('inv-placeholder').style.display = hasSelected ? 'none' : '';
+  document.getElementById('inv-panel').style.display       = hasSelected ? ''     : 'none';
+  if (!hasSelected) return;
 
-  // Remember which rows were expanded before wiping DOM
+  const totals    = computeTotals();
+  const tbody     = document.getElementById('inventory-tbody');
+  const dashProds = getDashboardProducts(totals);
+
+  // Preserve expanded editor rows across re-render (key = "product|section")
   const expanded = new Set(
-    [...tbody.querySelectorAll('tr.inv-row.expanded')].map(r => r.dataset.product)
+    [...tbody.querySelectorAll('tr.inv-row.expanded')].map(r => r.dataset.rowkey)
   );
-
   tbody.innerHTML = '';
 
-  PRODUCT_LIST.forEach(p => {
-    const t  = totals[p];
-    const st = stock[p];
-    const gap    = t.req    - st.normal;
-    const gapMut = t.reqMut - st.mutation;
-    const isOpen = expanded.has(p);
+  if (dashProds.length === 0) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 4; td.style.cssText = 'padding:16px;text-align:center;color:var(--text-muted)';
+    td.textContent = 'Đơn được chọn chưa có sản phẩm.';
+    tr.appendChild(td); tbody.appendChild(tr);
+    updateReadyState();
+    return;
+  }
 
-    // ---- DATA ROW ----
-    const dataRow = document.createElement('tr');
-    dataRow.className = 'inv-row' + (isOpen ? ' expanded' : '');
-    dataRow.dataset.product = p;
-    dataRow.innerHTML = `
-      <td><div class="inv-name"><span class="inv-expand-icon">▶</span>${p}</div></td>
-      <td><span class="inv-req">${t.req}</span></td>
-      <td class="hide-sm"><span class="inv-req-mut">${t.reqMut}</span></td>
-      <td><span class="inv-stk">${st.normal}</span></td>
-      <td class="hide-sm"><span class="inv-stk-mut">${st.mutation}</span></td>
-      <td>${gapBadge(gap)}</td>
-      <td class="hide-sm">${gapBadge(gapMut)}</td>
-    `;
-    tbody.appendChild(dataRow);
+  const stdProds = dashProds.filter(p => totals[p].stdReq > 0);
+  const mutProds = dashProds.filter(p => totals[p].reqMut > 0);
 
-    // ---- EDITOR ROW (inline expander) ----
-    const editorRow = document.createElement('tr');
-    editorRow.className = 'inv-editor-row';
-    editorRow.style.display = isOpen ? '' : 'none';
-    editorRow.dataset.product = p;
-
-    const editorTd = document.createElement('td');
-    editorTd.colSpan = 7;
-
-    const editorDiv = document.createElement('div');
-    editorDiv.className = 'inv-editor';
-
-    /*
-     * buildStockBlock(type)
-     * 'type' is either 'normal' or 'mutation'.
-     * Writes directly to stock[p][type] on each interaction.
-     * Calls refreshDataRow() for surgical DOM update (no full re-render).
-     */
-    function buildStockBlock(type) {
-      const isNormal = type === 'normal';
-      const block = document.createElement('div');
-      block.className = 'stock-block';
-
-      const label = document.createElement('div');
-      label.className = `stock-block-label ${isNormal ? 'normal' : 'mutation'}`;
-      label.textContent = isNormal ? '📦 Kho thường' : '⚡ Kho đột biến';
-      block.appendChild(label);
-
-      const stepperRow = document.createElement('div');
-      stepperRow.className = 'stepper-row';
-
-      const minusBtn = document.createElement('button');
-      minusBtn.className = 'stepper-btn';
-      minusBtn.textContent = '−';
-      minusBtn.title = 'Giảm 1';
-
-      const numInput = document.createElement('input');
-      numInput.type  = 'number';
-      numInput.className = 'stepper-input';
-      numInput.min   = 0;
-      numInput.value = stock[p][type];
-
-      const plusBtn = document.createElement('button');
-      plusBtn.className = 'stepper-btn';
-      plusBtn.textContent = '+';
-      plusBtn.title = 'Tăng 1';
-
-      // Apply value: clamp ≥ 0, write to state, update row cells
-      function applyVal(v) {
-        stock[p][type] = Math.max(0, parseInt(v) || 0);
-        numInput.value = stock[p][type];
-        refreshDataRow(dataRow, p);
+  function sortProducts(prods, section) {
+    if (!sortState.col || !sortState.dir) return [...prods];
+    return [...prods].sort((a, b) => {
+      let va, vb;
+      const isStd = section === 'std';
+      switch (sortState.col) {
+        case 'req':
+          va = isStd ? totals[a].stdReq : totals[a].reqMut;
+          vb = isStd ? totals[b].stdReq : totals[b].reqMut;
+          break;
+        case 'gap':
+          va = isStd ? totals[a].stdReq - stock[a].normal       : totals[a].reqMut - totalMutStock(a);
+          vb = isStd ? totals[b].stdReq - stock[b].normal       : totals[b].reqMut - totalMutStock(b);
+          break;
+        default: return 0;
       }
+      return sortState.dir === 'asc' ? va - vb : vb - va;
+    });
+  }
 
-      minusBtn.addEventListener('click',  () => applyVal(stock[p][type] - 1));
-      plusBtn.addEventListener('click',   () => applyVal(stock[p][type] + 1));
-      numInput.addEventListener('change', () => applyVal(numInput.value));
-      // 'input' fires while typing for immediate gap feedback
-      numInput.addEventListener('input',  () => applyVal(numInput.value));
+  function appendSubheader(label) {
+    const tr = document.createElement('tr');
+    tr.className = 'inv-section-header';
+    const td = document.createElement('td');
+    td.colSpan = 4; td.textContent = label;
+    tr.appendChild(td); tbody.appendChild(tr);
+  }
 
-      // Prevent row-click toggle when clicking inside stepper
-      stepperRow.addEventListener('click', e => e.stopPropagation());
+  if (stdProds.length > 0) {
+    appendSubheader('📦 Sản phẩm thường');
+    sortProducts(stdProds, 'std').forEach(p => appendProductRow(p, 'std', totals, expanded));
+  }
+  if (mutProds.length > 0) {
+    appendSubheader('⚡ Sản phẩm đột biến');
+    sortProducts(mutProds, 'mut').forEach(p => appendProductRow(p, 'mut', totals, expanded));
+  }
 
-      stepperRow.append(minusBtn, numInput, plusBtn);
-      block.appendChild(stepperRow);
-      return block;
+  // PATCH 4.2 — update ready badges after inventory re-render
+  updateReadyState();
+}
+
+/**
+ * appendProductRow(p, section, totals, expanded)
+ * Adds one data row + one hidden editor row to #inventory-tbody.
+ */
+function appendProductRow(p, section, totals, expanded) {
+  const tbody  = document.getElementById('inventory-tbody');
+  const t      = totals[p];
+  const isStd  = section === 'std';
+  const rowKey = `${p}|${section}`;
+  const isOpen = expanded.has(rowKey);
+  const req    = isStd ? t.stdReq  : t.reqMut;
+  const stk    = isStd ? stock[p].normal : totalMutStock(p);
+
+  const missingMuts = isStd ? [] : MUTATIONS.filter(m =>
+    (t.reqByMut[m] || 0) > (stock[p].mutation[m] || 0)
+  );
+
+  // ---- DATA ROW ----
+  const dataRow = document.createElement('tr');
+  dataRow.className = 'inv-row' + (isOpen ? ' expanded' : '');
+  dataRow.dataset.product = p;
+  dataRow.dataset.rowkey  = rowKey;
+  dataRow.dataset.section = section;
+
+  // Note cell (mutation section only)
+  let noteCellHTML = '';
+  if (!isStd) {
+    if (missingMuts.length === 0) {
+      noteCellHTML = '<span class="note-ok">✓ Đủ</span>';
+    } else {
+      const SHOW_MAX  = 3;
+      const shown     = missingMuts.slice(0, SHOW_MAX);
+      const hidden    = missingMuts.slice(SHOW_MAX);
+      const shownText = shown.map(m => `<span style="color:var(--danger)">${m}</span>`).join(', ');
+      const moreBtn   = hidden.length > 0
+        ? `<button class="note-viewall-btn" data-hidden='${JSON.stringify(hidden)}'> +${hidden.length} loại</button>`
+        : '';
+      noteCellHTML = `<div class="note-missing">Thiếu: ${shownText}${moreBtn}</div>`;
+    }
+  }
+
+  dataRow.innerHTML = `
+    <td><div class="inv-name"><span class="inv-expand-icon">▶</span>${p}</div></td>
+    <td><span class="${isStd ? 'inv-req' : 'inv-req-mut'}">${req}</span></td>
+    <td>${gapBadge(req, stk)}</td>
+    <td class="note-cell hide-sm">${noteCellHTML}</td>
+  `;
+  tbody.appendChild(dataRow);
+
+  // Wire "View all" button in note cell
+  if (!isStd && missingMuts.length > 3) {
+    const viewBtn = dataRow.querySelector('.note-viewall-btn');
+    if (viewBtn) {
+      const hm = JSON.parse(viewBtn.dataset.hidden);
+      wireViewAllBtn(viewBtn, hm, viewBtn.closest('.note-missing'));
+    }
+  }
+
+  // ---- EDITOR ROW ----
+  const editorRow = document.createElement('tr');
+  editorRow.className = 'inv-editor-row';
+  editorRow.style.display = isOpen ? '' : 'none';
+
+  const editorTd  = document.createElement('td');
+  editorTd.colSpan = 4;
+  const editorDiv = document.createElement('div');
+  editorDiv.className = 'inv-editor';
+
+  if (isStd) {
+    // Standard editor: one normal-stock stepper
+    const blk   = document.createElement('div');
+    blk.className = 'stock-block';
+    const lbl   = document.createElement('div');
+    lbl.className = 'stock-block-label normal';
+    lbl.textContent = '📦 Kho thường';
+    blk.appendChild(lbl);
+    const ns = buildStepper(stock[p].normal, v => {
+      stock[p].normal = v;
+      refreshDataRow(dataRow, p, section, computeTotals());
+      updateReadyState(); // PATCH 4.2 — live ready check on stock edit
+    });
+    ns.addEventListener('click', e => e.stopPropagation());
+    blk.appendChild(ns);
+    editorDiv.appendChild(blk);
+
+  } else {
+    // Mutation editor: per-mutation-type stepper table
+    const blk   = document.createElement('div');
+    blk.className = 'stock-block';
+    const lbl   = document.createElement('div');
+    lbl.className = 'stock-block-label mutation';
+    lbl.textContent = '⚡ Kho đột biến (theo từng loại)';
+    blk.appendChild(lbl);
+
+    const activeMuts = MUTATIONS.filter(m =>
+      (t.reqByMut[m] || 0) > 0 || (stock[p].mutation[m] || 0) > 0
+    );
+    const hiddenMuts = MUTATIONS.filter(m => !activeMuts.includes(m));
+
+    const mutTable = document.createElement('table');
+    mutTable.className = 'mut-stock-table';
+
+    function buildMutRow(m) {
+      const tr     = document.createElement('tr');
+      const reqV   = t.reqByMut[m] || 0;
+      const nameTd = document.createElement('td'); nameTd.textContent = m;
+      const reqTd  = document.createElement('td');
+      reqTd.innerHTML = `<span style="color:var(--text-muted);font-size:0.7rem">YC:</span> <span style="color:var(--accent2)">${reqV}</span>`;
+      const stpTd  = document.createElement('td');
+      const s = buildStepper(stock[p].mutation[m] || 0, v => {
+        stock[p].mutation[m] = v;
+        refreshDataRow(dataRow, p, section, computeTotals());
+        updateReadyState(); // PATCH 4.2 — live ready check on stock edit
+      });
+      s.addEventListener('click', e => e.stopPropagation());
+      stpTd.appendChild(s);
+      tr.append(nameTd, reqTd, stpTd);
+      return tr;
     }
 
-    editorDiv.appendChild(buildStockBlock('normal'));
-    editorDiv.appendChild(buildStockBlock('mutation'));
-    editorTd.appendChild(editorDiv);
-    editorRow.appendChild(editorTd);
-    tbody.appendChild(editorRow);
+    if (activeMuts.length === 0) {
+      const ph = document.createElement('div');
+      ph.style.cssText = 'color:var(--text-muted);font-size:0.78rem;font-style:italic;padding:4px 0';
+      ph.textContent = 'Chưa có yêu cầu đột biến cho sản phẩm này.';
+      blk.appendChild(ph);
+    } else {
+      activeMuts.forEach(m => mutTable.appendChild(buildMutRow(m)));
+      blk.appendChild(mutTable);
+    }
 
-    // Toggle expand/collapse on data-row click
-    dataRow.addEventListener('click', () => {
-      const opening = dataRow.classList.toggle('expanded');
-      editorRow.style.display = opening ? '' : 'none';
-    });
+    if (hiddenMuts.length > 0) {
+      const toggleBtn = document.createElement('button');
+      toggleBtn.style.cssText =
+        'background:none;border:none;color:var(--text-muted);font-size:0.73rem;' +
+        'cursor:pointer;padding:4px 0;text-decoration:underline;text-align:left';
+      toggleBtn.textContent = `+ Xem tất cả (${MUTATIONS.length} loại)`;
+      toggleBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        toggleBtn.remove();
+        hiddenMuts.forEach(m => mutTable.appendChild(buildMutRow(m)));
+        if (!blk.contains(mutTable)) blk.appendChild(mutTable);
+        const closeToggle = document.createElement('button');
+        closeToggle.style.cssText =
+          'background:none;border:1px solid var(--border);border-radius:4px;' +
+          'color:var(--text-muted);font-size:0.7rem;cursor:pointer;padding:2px 8px;margin-top:4px';
+        closeToggle.textContent = '✕ Thu gọn';
+        closeToggle.addEventListener('click', ev => {
+          ev.stopPropagation();
+          hiddenMuts.forEach(m => {
+            mutTable.querySelectorAll('tr').forEach(r => {
+              if (r.cells[0] && r.cells[0].textContent === m) r.remove();
+            });
+          });
+          closeToggle.remove();
+          blk.appendChild(toggleBtn);
+        });
+        blk.appendChild(closeToggle);
+      });
+      blk.appendChild(toggleBtn);
+    }
+
+    editorDiv.appendChild(blk);
+  }
+
+  editorTd.appendChild(editorDiv);
+  editorRow.appendChild(editorTd);
+  tbody.appendChild(editorRow);
+
+  dataRow.addEventListener('click', () => {
+    const opening = dataRow.classList.toggle('expanded');
+    editorRow.style.display = opening ? '' : 'none';
   });
 }
 
-/*
- * refreshDataRow(row, product)
- * Surgically updates only the value/badge cells of a data row.
- * Called by steppers so the editor stays open during edits
- * without triggering a full renderInventory().
+/**
+ * wireViewAllBtn(btn, hiddenMuts, container)
+ * Attaches expand/collapse logic to a "View all" button inside the note cell.
  */
-function refreshDataRow(row, p) {
-  const totals = computeTotals();
-  const t  = totals[p];
-  const st = stock[p];
-  const gap    = t.req    - st.normal;
-  const gapMut = t.reqMut - st.mutation;
-
-  row.querySelector('.inv-req').textContent     = t.req;
-  row.querySelector('.inv-req-mut').textContent = t.reqMut;
-  row.querySelector('.inv-stk').textContent     = st.normal;
-  row.querySelector('.inv-stk-mut').textContent = st.mutation;
-
-  const tds = row.querySelectorAll('td');
-  tds[5].innerHTML = gapBadge(gap);
-  tds[6].innerHTML = gapBadge(gapMut);
+function wireViewAllBtn(btn, hiddenMuts, container) {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    btn.remove();
+    const expandDiv = document.createElement('div');
+    expandDiv.className = 'note-expanded-list';
+    expandDiv.textContent = hiddenMuts.join(', ');
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'note-close-btn';
+    closeBtn.textContent = '✕ Thu gọn';
+    closeBtn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      expandDiv.remove();
+      closeBtn.remove();
+      const newBtn = document.createElement('button');
+      newBtn.className = 'note-viewall-btn';
+      newBtn.textContent = ` +${hiddenMuts.length} loại`;
+      container.appendChild(newBtn);
+      wireViewAllBtn(newBtn, hiddenMuts, container);
+    });
+    container.appendChild(expandDiv);
+    container.appendChild(closeBtn);
+  });
 }
 
-// Full inventory re-render (used after order add/edit/delete/toggle)
-function refreshInventory() { renderInventory(); }
+/**
+ * buildStepper(initialVal, onUpdate)
+ * Returns a [−] [input] [+] stepper row.
+ */
+function buildStepper(initialVal, onUpdate) {
+  const row   = document.createElement('div');
+  row.className = 'stepper-row';
+  const minus = document.createElement('button');
+  minus.className = 'stepper-btn'; minus.textContent = '−';
+  const inp   = document.createElement('input');
+  inp.type = 'number'; inp.className = 'stepper-input';
+  inp.min = 0; inp.value = initialVal;
+  const plus  = document.createElement('button');
+  plus.className = 'stepper-btn'; plus.textContent = '+';
+  function apply(v) {
+    const c = Math.max(0, parseInt(v) || 0);
+    inp.value = c; onUpdate(c);
+  }
+  minus.addEventListener('click', () => apply(+inp.value - 1));
+  plus.addEventListener('click',  () => apply(+inp.value + 1));
+  inp.addEventListener('change',  () => apply(inp.value));
+  inp.addEventListener('input',   () => apply(inp.value));
+  row.append(minus, inp, plus);
+  return row;
+}
+
+/**
+ * refreshDataRow(dataRow, p, section, totals)
+ * Surgically updates value cells — keeps editor open.
+ */
+function refreshDataRow(dataRow, p, section, totals) {
+  const t     = totals[p];
+  const isStd = section === 'std';
+  const req   = isStd ? t.stdReq  : t.reqMut;
+  const stk   = isStd ? stock[p].normal : totalMutStock(p);
+
+  const tds = dataRow.querySelectorAll('td');
+  const reqSpan = tds[1].querySelector('span');
+  if (reqSpan) reqSpan.textContent = req;
+  tds[2].innerHTML = gapBadge(req, stk);
+
+  if (!isStd && tds[3]) {
+    const missingMuts = MUTATIONS.filter(m =>
+      (t.reqByMut[m] || 0) > (stock[p].mutation[m] || 0)
+    );
+    const SHOW_MAX  = 3;
+    const shown     = missingMuts.slice(0, SHOW_MAX);
+    const hidden    = missingMuts.slice(SHOW_MAX);
+    const shownTxt  = shown.map(m => `<span style="color:var(--danger)">${m}</span>`).join(', ');
+    const moreHTML  = hidden.length > 0
+      ? `<button class="note-viewall-btn"> +${hidden.length} loại</button>`
+      : '';
+    tds[3].innerHTML = missingMuts.length === 0
+      ? '<span class="note-ok">✓ Đủ</span>'
+      : `<div class="note-missing">Thiếu: ${shownTxt}${moreHTML}</div>`;
+    const vb = tds[3].querySelector('.note-viewall-btn');
+    if (vb) wireViewAllBtn(vb, hidden, tds[3].querySelector('.note-missing'));
+  }
+}
 
 // ============================================================
-// RENDER ORDERS
+// SORT — column header click handlers
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('#inventory-table thead th[data-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (sortState.col === col) {
+        if (sortState.dir === 'asc')        sortState.dir = 'desc';
+        else if (sortState.dir === 'desc') { sortState.col = null; sortState.dir = null; }
+        else                                sortState.dir = 'asc';
+      } else {
+        sortState.col = col; sortState.dir = 'asc';
+      }
+      document.querySelectorAll('#inventory-table thead th[data-col]').forEach(h => {
+        h.classList.remove('sort-asc', 'sort-desc');
+        if (h.dataset.col === sortState.col)
+          h.classList.add(sortState.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+      });
+      renderInventory();
+    });
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.sd-popup.open').forEach(p => p.classList.remove('open'));
+      document.querySelectorAll('.sd-input.active-drop').forEach(i => i.classList.remove('active-drop'));
+      closeModal();
+    }
+  });
+});
+
+// ============================================================
+// selectNextOrder(removedIndex)
+// Called after an order is removed from the array.
+// Selects the order now at removedIndex, falling back to the
+// last order if removedIndex is out of range.
+// Sets selectedId = null when the list is empty.
+// Handles all cases:
+//   orders.length === 0       → selectedId = null
+//   removedIndex >= length    → clamp to last element
+//   removedIndex < 0 (never)  → Math.min resolves to 0
+// ============================================================
+function selectNextOrder(removedIndex) {
+  if (orders.length === 0) { selectedId = null; return; }
+  const idx = Math.min(Math.max(removedIndex, 0), orders.length - 1);
+  selectedId = orders[idx].id;
+}
+
+// ============================================================
+// removeOrder(orderId)
+// Used by the Delete handler.
+// Returns the index the order occupied, or -1 if not found.
+// Guard prevents splice(-1,1) silently deleting the last element.
+// ============================================================
+function removeOrder(orderId) {
+  const idx = orders.findIndex(o => o.id === orderId);
+  if (idx === -1) return -1; // guard: order already gone
+  orders.splice(idx, 1);
+  return idx;
+}
+
+// ============================================================
+// RENDER ORDERS  — PATCH 4.3
+//
+// Cards are pure HTML — no per-element event listeners.
+// All interactions are handled by a SINGLE delegated listener
+// on #orders-list (wired once at the bottom of the script).
+// This completely eliminates attachment-timing, stale-closure,
+// and stopPropagation ordering issues.
 // ============================================================
 function renderOrders() {
   const list       = document.getElementById('orders-list');
   const emptyState = document.getElementById('empty-state');
 
+  // Remove existing cards (leave #empty-state in place)
   [...list.querySelectorAll('.order-card')].forEach(el => el.remove());
 
-  if (orders.length === 0) { emptyState.style.display = ''; return; }
+  if (orders.length === 0) {
+    emptyState.style.display = '';
+    selectedId = null;
+    renderInventory();
+    return;
+  }
   emptyState.style.display = 'none';
 
   orders.forEach(order => {
     const card = document.createElement('div');
-    card.className = 'order-card' + (order.included ? '' : ' excluded');
-    card.dataset.id = order.id;
+    card.className = 'order-card'
+      + (order.included ? '' : ' excluded')
+      + (order.id === selectedId ? ' selected' : '');
+    card.dataset.id = String(order.id); // used by delegated handler
 
-    // Header
-    const header = document.createElement('div');
-    header.className = 'card-header';
-    header.innerHTML = `
-      <span class="card-title">${order.name}</span>
-      <div class="card-controls">
-        <label class="include-label" title="Tính vào tổng">
-          <input type="checkbox" class="include-cb" ${order.included ? 'checked' : ''}/>
-          Tính vào tổng
-        </label>
-        <button class="btn-icon edit-btn"          title="Chỉnh sửa">✏️</button>
-        <button class="btn-icon danger delete-btn" title="Xóa đơn">🗑</button>
-      </div>
-    `;
-
-    // Body: product lines
-    const body = document.createElement('div');
-    body.className = 'card-body';
-
+    // Lines HTML
+    let linesHTML = '';
     if (order.lines.length === 0) {
-      body.innerHTML = '<span class="empty-order">Đơn trống</span>';
+      linesHTML = '<span class="empty-order">Đơn trống</span>';
     } else {
-      order.lines.forEach(l => {
-        const row = document.createElement('div');
-        row.className = 'product-line';
-        row.innerHTML = `
+      linesHTML = order.lines.map(l => `
+        <div class="product-line">
           <span class="line-product">${l.product}</span>
           <span class="line-qty">×${l.qty}</span>
           ${l.mutation ? `<span class="line-mutation">⚡ ${l.mutation}</span>` : ''}
-        `;
-        body.appendChild(row);
-      });
+        </div>`).join('');
     }
 
-    card.append(header, body);
-    list.appendChild(card);
+    // All buttons carry data-order-id AND a data-action attribute.
+    // The delegated handler on #orders-list dispatches by data-action.
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="card-title">${order.name}</span>
+        <span class="ready-badge">✅ Có thể hoàn thành</span>
+        <div class="card-controls">
+          <label class="include-label" title="Tính vào tổng">
+            <input type="checkbox" class="include-cb"
+                   data-order-id="${order.id}"
+                   ${order.included ? 'checked' : ''}/>
+            Tính vào tổng
+          </label>
+          <button class="btn-icon edit-btn"
+                  data-action="edit"
+                  data-order-id="${order.id}"
+                  title="Chỉnh sửa">✏️ Sửa</button>
+          <button class="btn-icon danger delete-btn"
+                  data-action="delete"
+                  data-order-id="${order.id}"
+                  title="Xóa đơn">🗑 Xóa</button>
+        </div>
+      </div>
+      <div class="card-body">${linesHTML}</div>
+    `;
 
-    // Wire up card controls
-    header.querySelector('.include-cb').addEventListener('change', e => {
-      order.included = e.target.checked;
-      card.classList.toggle('excluded', !order.included);
-      refreshInventory();
-    });
-    header.querySelector('.edit-btn').addEventListener('click', () => openModal(order.id));
-    header.querySelector('.delete-btn').addEventListener('click', () => {
-      if (confirm(`Xóa "${order.name}"?`)) {
-        orders = orders.filter(o => o.id !== order.id);
-        renderOrders();
-        refreshInventory();
-      }
-    });
+    list.appendChild(card);
+  });
+
+  updateReadyState();
+}
+
+// ============================================================
+// DELEGATED EVENT HANDLER — single listener on #orders-list
+// Handles: card-select, include-toggle, edit, delete.
+// Wired once at init; never needs to be re-attached.
+// ============================================================
+function initOrderListHandler() {
+  const list = document.getElementById('orders-list');
+
+  list.addEventListener('click', e => {
+    // ── Delete ────────────────────────────────────────────────
+    const deleteBtn = e.target.closest('[data-action="delete"]');
+    if (deleteBtn) {
+      const oid = parseInt(deleteBtn.dataset.orderId, 10);
+      if (isNaN(oid)) return;
+      const o = orders.find(x => x.id === oid);
+      if (!o) return;
+      if (!confirm(`Xóa "${o.name}"?`)) return;
+      const wasSelected = (selectedId === oid);
+      const idx = removeOrder(oid);
+      if (idx === -1) return;
+      if (wasSelected) selectNextOrder(idx);
+      renderOrders();
+      renderInventory();
+      return;
+    }
+
+    // ── Edit ──────────────────────────────────────────────────
+    const editBtn = e.target.closest('[data-action="edit"]');
+    if (editBtn) {
+      const oid = parseInt(editBtn.dataset.orderId, 10);
+      if (!isNaN(oid)) openModal(oid);
+      return;
+    }
+
+    // ── Include label / checkbox click — handled by 'change' below ─
+    if (e.target.closest('.include-label')) return;
+
+    // ── Card body → select order (ignore clicks inside controls) ─
+    if (e.target.closest('.card-controls')) return;
+    const card = e.target.closest('.order-card');
+    if (!card) return;
+    const oid = parseInt(card.dataset.id, 10);
+    if (isNaN(oid)) return;
+    selectedId = oid;
+    document.querySelectorAll('.order-card').forEach(c =>
+      c.classList.toggle('selected', parseInt(c.dataset.id, 10) === oid)
+    );
+    renderInventory();
+  });
+
+  // Separate 'change' listener for the include checkbox — fires reliably
+  // whether the user clicks the checkbox directly or the label text.
+  list.addEventListener('change', e => {
+    const cb = e.target.closest('.include-cb');
+    if (!cb) return;
+    const oid = parseInt(cb.dataset.orderId, 10);
+    if (isNaN(oid)) return;
+    const o = orders.find(x => x.id === oid);
+    if (!o) return;
+    o.included = cb.checked;
+    const card = cb.closest('.order-card');
+    if (card) card.classList.toggle('excluded', !o.included);
+    renderInventory();
   });
 }
 
@@ -880,24 +1448,25 @@ function openModal(orderId = null) {
 
   if (orderId !== null) {
     const order = orders.find(o => o.id === orderId);
+    if (!order) return; // guard
     title.textContent = `Chỉnh sửa ${order.name}`;
     order.lines.forEach(l => addModalLine(l));
   } else {
     title.textContent = 'Tạo đơn mới';
-    addModalLine(); // start with one blank line
+    addModalLine();
   }
 
-  // "+ Thêm sản phẩm" button appended at the end
   const addLineBtn = document.createElement('button');
   addLineBtn.className = 'btn-add-line';
   addLineBtn.id = 'add-line-btn';
   addLineBtn.textContent = '+ Thêm sản phẩm';
   addLineBtn.addEventListener('click', () => {
-    body.insertBefore(createModalLine(), addLineBtn);
+    body.insertBefore(createModalLine(null), addLineBtn);
   });
   body.appendChild(addLineBtn);
 
   overlay.classList.add('open');
+  overlay.scrollTop = 0;
 }
 
 function addModalLine(data = null) {
@@ -907,73 +1476,55 @@ function addModalLine(data = null) {
   addBtn ? body.insertBefore(line, addBtn) : body.appendChild(line);
 }
 
-function createModalLine(data = null) {
+function createModalLine(data) {
   const wrapper = document.createElement('div');
   wrapper.className = 'modal-line';
 
-  // Row 1: product dropdown + qty input + remove button
   const row1 = document.createElement('div');
   row1.className = 'modal-line-row1';
 
-  const productSel = document.createElement('select');
-  productSel.className = 'select-product';
-  PRODUCT_LIST.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = p; opt.textContent = p;
-    productSel.appendChild(opt);
-  });
-  if (data) productSel.value = data.product;
+  const { wrapper: prodWrap, getValue: getProd } =
+    createSearchableDropdown(PRODUCT_LIST, data ? data.product : PRODUCT_LIST[0], 'Chọn sản phẩm…');
+  prodWrap.style.flex = '1';
 
   const qtyInput = document.createElement('input');
-  qtyInput.type  = 'number';
-  qtyInput.className = 'input-qty';
-  qtyInput.min   = 0;
-  qtyInput.value = data ? data.qty : 1;
+  qtyInput.type = 'number'; qtyInput.className = 'input-qty';
+  qtyInput.min = 0; qtyInput.value = data ? data.qty : 1;
   qtyInput.placeholder = 'SL';
 
   const removeBtn = document.createElement('button');
   removeBtn.className = 'btn-icon danger';
-  removeBtn.textContent = '×';
-  removeBtn.title = 'Xóa dòng này';
+  removeBtn.textContent = '×'; removeBtn.title = 'Xóa dòng';
   removeBtn.addEventListener('click', () => wrapper.remove());
 
-  row1.append(productSel, qtyInput, removeBtn);
+  row1.append(prodWrap, qtyInput, removeBtn);
 
-  // Row 2: mutation checkbox + conditional mutation dropdown
   const row2 = document.createElement('div');
   row2.className = 'modal-line-row2';
 
   const mutLabel = document.createElement('label');
   mutLabel.className = 'mutation-check-label';
-
   const mutCheck = document.createElement('input');
   mutCheck.type = 'checkbox';
   if (data && data.mutation) mutCheck.checked = true;
   mutLabel.appendChild(mutCheck);
   mutLabel.appendChild(document.createTextNode(' Có đột biến?'));
 
-  const mutSel = document.createElement('select');
-  mutSel.className = 'select-mutation';
-  MUTATIONS.forEach(m => {
-    const opt = document.createElement('option');
-    opt.value = m; opt.textContent = m;
-    mutSel.appendChild(opt);
-  });
-  if (data && data.mutation) mutSel.value = data.mutation;
+  const { wrapper: mutWrap, getValue: getMut } =
+    createSearchableDropdown(MUTATIONS, data ? data.mutation : null, 'Chọn đột biến…');
+  mutWrap.classList.add('mut-wrap');
 
-  // Show/hide mutation dropdown based on checkbox state
-  const syncMut = () => { mutSel.style.display = mutCheck.checked ? '' : 'none'; };
+  const syncMut = () => { mutWrap.style.display = mutCheck.checked ? '' : 'none'; };
   mutCheck.addEventListener('change', syncMut);
-  syncMut(); // initial state
+  syncMut();
 
-  row2.append(mutLabel, mutSel);
+  row2.append(mutLabel, mutWrap);
   wrapper.append(row1, row2);
 
-  // Data getter used by saveModal()
   wrapper._getData = () => ({
-    product:  productSel.value,
+    product:  getProd() || PRODUCT_LIST[0],
     qty:      parseInt(qtyInput.value) || 0,
-    mutation: mutCheck.checked ? mutSel.value : null
+    mutation: mutCheck.checked ? getMut() : null
   });
 
   return wrapper;
@@ -981,9 +1532,9 @@ function createModalLine(data = null) {
 
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
+  document.querySelectorAll('.sd-popup.open').forEach(p => p.classList.remove('open'));
   editingId = null;
 }
-
 function showError(msg) {
   const el = document.getElementById('modal-error');
   el.textContent = msg; el.classList.add('show');
@@ -996,15 +1547,10 @@ function saveModal() {
   const body    = document.getElementById('modal-body');
   const lineEls = [...body.querySelectorAll('.modal-line')];
 
-  if (lineEls.length === 0) {
-    showError('Đơn cần ít nhất một sản phẩm.');
-    return;
-  }
+  if (lineEls.length === 0) { showError('Đơn cần ít nhất một sản phẩm.'); return; }
 
   const lines = lineEls.map(el => el._getData());
 
-  // DUPLICATE BLOCK: same product cannot appear twice in one order.
-  // Approach: block with error message (not silent merge) — keeps intent explicit.
   const seen = new Set();
   for (const l of lines) {
     if (seen.has(l.product)) {
@@ -1017,15 +1563,18 @@ function saveModal() {
   hideError();
 
   if (editingId !== null) {
-    orders.find(o => o.id === editingId).lines = lines;
+    const existing = orders.find(o => o.id === editingId);
+    if (existing) existing.lines = lines;
   } else {
-    orders.push({ id: nextId, name: `Đơn #${nextId}`, included: true, lines });
+    const newOrder = { id: nextId, name: `Đơn #${nextId}`, included: true, lines };
+    orders.push(newOrder);
+    selectedId = nextId;
     nextId++;
   }
 
   closeModal();
   renderOrders();
-  refreshInventory();
+  renderInventory();
 }
 
 // ============================================================
@@ -1034,22 +1583,16 @@ function saveModal() {
 document.getElementById('add-order-btn').addEventListener('click', () => openModal());
 document.getElementById('modal-cancel').addEventListener('click', closeModal);
 document.getElementById('modal-save').addEventListener('click', saveModal);
-
-// Close modal when clicking the dark overlay background
 document.getElementById('modal-overlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
-});
-
-// ESC closes modal
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
 });
 
 // ============================================================
 // INIT
 // ============================================================
-renderInventory();
+initOrderListHandler(); // wire delegated click handler once
 renderOrders();
+renderInventory();
 </script>
 </body>
 </html>
