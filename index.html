@@ -28,11 +28,12 @@
   --text-muted:  #7a9e82;
   --radius:      12px;
   --shadow:      0 4px 24px #00000060;
-
-  /* PATCH 4.2 — "ready to complete" glow colors */
   --ready:       #34d399;
   --ready-dim:   #34d39922;
   --ready-glow:  #34d39944;
+  /* flowers tab accent */
+  --flower:      #f472b6;
+  --flower-dim:  #f472b622;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,7 +49,7 @@ body {
 /* ============================================================
    LAYOUT
 ============================================================ */
-header { text-align: center; margin-bottom: 28px; }
+header { text-align: center; margin-bottom: 20px; }
 header h1 {
   font-family: 'Space Mono', monospace;
   font-size: clamp(1.3rem, 4vw, 2rem);
@@ -69,6 +70,30 @@ section { margin-bottom: 32px; }
 .sec-divider { flex: 1; height: 1px; background: var(--border); }
 
 /* ============================================================
+   TAB BAR — PATCH 4.4
+============================================================ */
+.tab-bar {
+  display: flex; gap: 4px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 5px;
+  margin-bottom: 24px;
+}
+.tab-btn {
+  flex: 1; padding: 9px 16px;
+  background: none; border: none; border-radius: 8px;
+  color: var(--text-muted); cursor: pointer;
+  font-family: 'Nunito', sans-serif; font-size: 0.9rem; font-weight: 700;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.tab-btn:hover { background: var(--border); color: var(--text); }
+.tab-btn.active {
+  background: var(--card); color: var(--accent);
+  box-shadow: 0 1px 4px #00000040;
+}
+.tab-btn.active.flowers-tab { color: var(--flower); }
+
+/* ============================================================
    ORDER CARDS
 ============================================================ */
 #orders-list { display: flex; flex-direction: column; gap: 10px; }
@@ -80,15 +105,17 @@ section { margin-bottom: 32px; }
   box-shadow: var(--shadow); cursor: pointer;
 }
 .order-card.excluded { opacity: 0.45; }
-
-/* Selected order — normal highlight */
 .order-card.selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent-dim);
 }
+/* Flowers tab: selected uses pink accent */
+body.flowers-active .order-card.selected {
+  border-color: var(--flower);
+  box-shadow: 0 0 0 1px var(--flower-dim);
+}
 
-/* PATCH 4.2 — "ready to complete" glow on selected card.
-   When order is completable, border glows green-teal and a badge appears. */
+/* Ready-to-complete glow */
 .order-card.selected.ready {
   border-color: var(--ready);
   box-shadow: 0 0 0 2px var(--ready-dim), 0 0 18px var(--ready-glow);
@@ -99,19 +126,14 @@ section { margin-bottom: 32px; }
   50%       { box-shadow: 0 0 0 2px var(--ready-dim), 0 0 28px #34d39966; }
 }
 
-/* Ready badge inside card header — hidden by default, shown via JS */
 .ready-badge {
-  display: none;
-  font-size: 0.72rem; font-weight: 800;
-  color: var(--ready);
-  background: var(--ready-dim);
-  border: 1px solid #34d39940;
-  border-radius: 6px;
-  padding: 2px 9px;
-  white-space: nowrap;
+  display: none; font-size: 0.72rem; font-weight: 800;
+  color: var(--ready); background: var(--ready-dim);
+  border: 1px solid #34d39940; border-radius: 6px;
+  padding: 2px 9px; white-space: nowrap;
   animation: fadeIn 0.3s ease;
 }
-@keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+@keyframes fadeIn { from { opacity:0; transform:scale(0.9); } to { opacity:1; transform:scale(1); } }
 .order-card.ready .ready-badge { display: inline-block; }
 
 .card-header {
@@ -124,6 +146,7 @@ section { margin-bottom: 32px; }
   font-weight: 700; font-size: 0.95rem;
   color: var(--accent); flex: 1; min-width: 70px;
 }
+body.flowers-active .card-title { color: var(--flower); }
 .card-controls { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 
 .include-label {
@@ -144,7 +167,11 @@ section { margin-bottom: 32px; }
 }
 .btn-icon:hover            { background: var(--border); color: var(--text); }
 .btn-icon.danger:hover     { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
-/* PATCH 4.3 — complete button removed; danger disabled state kept for delete */
+.btn-icon.complete         { border-color: var(--accent-dim); color: var(--accent); }
+.btn-icon.complete:hover   { background: var(--accent-dim); border-color: var(--accent); }
+.btn-icon.complete:disabled { opacity: 0.3; cursor: not-allowed; border-color: var(--border); color: var(--text-muted); }
+.order-card.ready .btn-icon.complete { border-color: var(--ready); color: var(--ready); font-weight: 800; }
+.order-card.ready .btn-icon.complete:hover { background: var(--ready-dim); }
 .btn-icon:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .card-body { padding: 10px 14px; }
@@ -155,10 +182,19 @@ section { margin-bottom: 32px; }
 }
 .product-line:last-child { border-bottom: none; }
 .line-product { font-weight: 700; color: var(--text); }
+/* PATCH 4.4: "stock/qty" display */
 .line-qty {
   font-family: 'Space Mono', monospace;
-  color: var(--accent); background: var(--accent-dim);
-  border-radius: 4px; padding: 1px 6px; font-size: 0.78rem;
+  background: var(--accent-dim); border-radius: 4px;
+  padding: 1px 6px; font-size: 0.78rem;
+}
+.line-qty.ok     { color: var(--accent); }
+.line-qty.low    { color: var(--warn); background: var(--warn-dim); }
+.line-qty.miss   { color: var(--danger); background: var(--danger-dim); }
+.line-color {
+  color: var(--flower); font-size: 0.75rem;
+  background: var(--flower-dim); border: 1px solid #f472b640;
+  border-radius: 4px; padding: 1px 6px;
 }
 .line-mutation {
   color: var(--accent2); font-size: 0.75rem;
@@ -228,6 +264,9 @@ section { margin-bottom: 32px; }
 }
 #inventory-table td:first-child { text-align: left; vertical-align: middle; }
 
+/* PATCH 4.4: note column right-aligned */
+.note-cell { text-align: right !important; font-size: 0.76rem; max-width: 220px; }
+
 .inv-name {
   font-weight: 700; color: var(--text);
   display: flex; align-items: center; gap: 6px; white-space: nowrap;
@@ -252,14 +291,13 @@ section { margin-bottom: 32px; }
 .gap-missing { background: var(--danger-dim);  color: var(--danger); border: 1px solid #f8717140; }
 .gap-zero    { background: #ffffff0d; color: var(--text-muted); border: 1px solid var(--border); }
 
-.note-cell        { text-align: left !important; font-size: 0.76rem; max-width: 220px; }
-.note-missing     { color: var(--danger); font-size: 0.72rem; line-height: 1.5; }
+.note-missing     { color: var(--danger); font-size: 0.72rem; line-height: 1.5; text-align: right; }
 .note-ok          { color: var(--text-muted); font-size: 0.72rem; font-style: italic; }
 .note-viewall-btn {
   background: none; border: none; color: var(--accent2);
   font-size: 0.7rem; cursor: pointer; text-decoration: underline; padding: 0; display: inline;
 }
-.note-expanded-list { margin-top: 4px; font-size: 0.71rem; color: var(--text-muted); line-height: 1.6; }
+.note-expanded-list { margin-top: 4px; font-size: 0.71rem; color: var(--text-muted); line-height: 1.6; text-align: right; }
 .note-close-btn {
   display: inline-block; margin-top: 4px;
   background: none; border: 1px solid var(--border); border-radius: 4px;
@@ -286,7 +324,11 @@ tr.inv-editor-row > td {
 .stock-block-label.normal   { color: var(--blue); }
 .stock-block-label.mutation { color: var(--accent2); }
 
-.stepper-row { display: flex; align-items: center; gap: 6px; }
+/* PATCH 4.4: center-align std inventory stepper */
+.stepper-row {
+  display: flex; align-items: center; gap: 6px;
+  justify-content: center; /* 5.2 center alignment */
+}
 .stepper-btn {
   background: var(--border); border: none; border-radius: 5px;
   color: var(--text); cursor: pointer;
@@ -320,13 +362,14 @@ tr.inv-editor-row > td {
   border: none; font-size: 1.7rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 4px 20px var(--accent-dim);
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
   z-index: 100; line-height: 1;
 }
-#add-order-btn:hover { transform: scale(1.1); box-shadow: 0 6px 28px #4ade8088; }
+#add-order-btn:hover { transform: scale(1.1); }
+body.flowers-active #add-order-btn { background: var(--flower); box-shadow: 0 4px 20px var(--flower-dim); }
 
 /* ============================================================
-   MODAL — overflow:visible so dropdown popups never clip
+   MODAL
 ============================================================ */
 .modal-overlay {
   display: none; position: fixed; inset: 0;
@@ -335,14 +378,12 @@ tr.inv-editor-row > td {
   padding: 16px; overflow-y: auto;
 }
 .modal-overlay.open { display: flex; }
-
 .modal {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); width: 100%; max-width: 620px;
-  overflow: visible; /* popup escapes */
+  overflow: visible;
   display: flex; flex-direction: column;
-  box-shadow: 0 12px 48px #00000090;
-  margin: auto;
+  box-shadow: 0 12px 48px #00000090; margin: auto;
 }
 .modal-header {
   padding: 15px 20px; border-bottom: 1px solid var(--border);
@@ -355,10 +396,8 @@ tr.inv-editor-row > td {
   color: var(--accent); flex: 1; font-size: 0.95rem;
 }
 .modal-body {
-  overflow: visible; flex: 1;
-  padding: 14px 18px;
-  display: flex; flex-direction: column; gap: 10px;
-  position: relative;
+  overflow: visible; flex: 1; padding: 14px 18px;
+  display: flex; flex-direction: column; gap: 10px; position: relative;
 }
 .modal-footer {
   padding: 12px 18px; border-top: 1px solid var(--border);
@@ -370,17 +409,16 @@ tr.inv-editor-row > td {
 .modal-line {
   background: var(--card); border: 1px solid var(--border);
   border-radius: 8px; padding: 11px;
-  display: flex; flex-direction: column; gap: 8px;
-  position: relative;
+  display: flex; flex-direction: column; gap: 8px; position: relative;
 }
-.modal-line-row1 { display: flex; gap: 7px; align-items: center; position: relative; z-index: 2; }
-.modal-line-row2 { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; position: relative; z-index: 1; }
+.modal-line-row1 { display: flex; gap: 7px; align-items: center; position: relative; z-index: 3; }
+.modal-line-row2 { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; position: relative; z-index: 2; }
+.modal-line-row3 { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; position: relative; z-index: 1; }
 
 /* ============================================================
-   SEARCHABLE DROPDOWN — popup is position:fixed, appended to body
+   SEARCHABLE DROPDOWN
 ============================================================ */
 .sd-wrapper { position: relative; flex: 1; min-width: 0; }
-
 .sd-input {
   width: 100%; background: var(--bg);
   border: 1px solid var(--border); border-radius: 6px;
@@ -390,23 +428,19 @@ tr.inv-editor-row > td {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .sd-input:focus, .sd-input.active-drop { border-color: var(--accent); }
-
 .sd-arrow {
   position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
   font-size: 0.58rem; color: var(--text-muted); pointer-events: none;
 }
-
 .sd-popup {
-  position: fixed;
-  background: var(--surface); border: 1px solid var(--accent);
-  border-radius: 8px; z-index: 9999;
-  max-height: 210px; overflow: hidden;
+  position: fixed; background: var(--surface);
+  border: 1px solid var(--accent); border-radius: 8px;
+  z-index: 9999; max-height: 210px; overflow: hidden;
   box-shadow: 0 8px 24px #00000080;
   display: flex; flex-direction: column; min-width: 160px;
 }
 .sd-popup:not(.open) { display: none; }
 .sd-popup.open { display: flex; }
-
 .sd-search {
   flex-shrink: 0; background: var(--bg); border: none;
   border-bottom: 1px solid var(--border); color: var(--text);
@@ -419,7 +453,6 @@ tr.inv-editor-row > td {
 .sd-item.hi     { background: var(--accent-dim); color: var(--accent); font-weight: 700; }
 .sd-item.chosen { font-weight: 700; color: var(--accent); }
 .sd-empty { padding: 10px 12px; color: var(--text-muted); font-size: 0.82rem; font-style: italic; }
-
 .sd-wrapper.mut-wrap { min-width: 130px; }
 
 input[type=number] {
@@ -472,7 +505,7 @@ input[type=number]:focus { border-color: var(--accent); }
 
 @media (max-width: 600px) {
   .hide-sm { display: none !important; }
-  .modal-line-row1 { flex-wrap: wrap; }
+  .modal-line-row1, .modal-line-row2, .modal-line-row3 { flex-wrap: wrap; }
   .sd-wrapper { min-width: 100%; }
   .note-cell { max-width: 120px; }
 }
@@ -482,17 +515,21 @@ input[type=number]:focus { border-color: var(--accent); }
 
 <header>
   <h1>🌿 Theo Dõi Đơn Hàng</h1>
-  <p>Quản lý đơn thu thập nông sản • Web Ver. 4.3</p>
+  <p>Quản lý đơn thu thập nông sản • Web Ver. 4.4</p>
 </header>
 
 <div class="container">
 
-  <!-- ============================================================
-       SECTION 1: ORDERS (top)
-  ============================================================ -->
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-fruits"   data-tab="fruits">🍎 Trái Cây</button>
+    <button class="tab-btn flowers-tab" id="tab-flowers" data-tab="flowers">🌸 Hoa / Cây Trồng</button>
+  </div>
+
+  <!-- ORDERS SECTION -->
   <section>
     <div class="sec-header">
-      <h2>Các đơn hàng</h2>
+      <h2 id="orders-section-title">Các đơn hàng</h2>
       <div class="sec-divider"></div>
     </div>
     <div id="orders-list">
@@ -502,22 +539,15 @@ input[type=number]:focus { border-color: var(--accent); }
     </div>
   </section>
 
-  <!-- ============================================================
-       SECTION 2: INVENTORY DASHBOARD
-       Visible only when an order is selected.
-       4 columns: Sản phẩm | Yêu cầu | Còn thiếu | Ghi chú
-       Rows split: std (stdReq>0) vs mut (reqMut>0), same product can appear in both.
-  ============================================================ -->
+  <!-- INVENTORY DASHBOARD SECTION -->
   <section>
     <div class="sec-header">
       <h2>Tổng cần &amp; Kho hàng</h2>
       <div class="sec-divider"></div>
     </div>
-
     <div id="inv-placeholder" class="inv-placeholder">
       Chọn 1 đơn để xem <strong>Tổng cần &amp; Tồn kho</strong>
     </div>
-
     <div id="inv-panel" style="display:none">
       <div class="legend">
         <span class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span> Yêu cầu</span>
@@ -525,16 +555,15 @@ input[type=number]:focus { border-color: var(--accent); }
         <span class="legend-item"><span class="gap-badge gap-ok"      style="font-size:0.65rem;padding:1px 5px">OK</span></span>
         <span class="legend-item"><span class="gap-badge gap-low"     style="font-size:0.65rem;padding:1px 5px">Ít</span></span>
         <span class="legend-item"><span class="gap-badge gap-missing" style="font-size:0.65rem;padding:1px 5px">Thiếu</span></span>
-        <span class="legend-item" style="font-size:0.7rem; color:var(--text-muted)">▶ Click hàng để chỉnh kho</span>
+        <span class="legend-item" style="font-size:0.7rem;color:var(--text-muted)">▶ Click hàng để chỉnh kho</span>
       </div>
-
       <div class="table-wrap">
         <table id="inventory-table">
           <thead>
             <tr>
               <th>Sản phẩm</th>
-              <th data-col="req" title="Tổng yêu cầu / Tổng YC ĐB">Yêu cầu</th>
-              <th data-col="gap" title="Còn thiếu = Yêu cầu − Kho">Còn thiếu</th>
+              <th data-col="req"  title="Tổng yêu cầu">Yêu cầu</th>
+              <th data-col="gap"  title="Còn thiếu = Yêu cầu − Kho">Còn thiếu</th>
               <th class="hide-sm" title="Ghi chú (thiếu loại ĐB nào)">Ghi chú</th>
             </tr>
           </thead>
@@ -549,14 +578,14 @@ input[type=number]:focus { border-color: var(--accent); }
 <!-- FAB -->
 <button id="add-order-btn" title="Tạo đơn mới">+</button>
 
-<!-- Add/Edit Order Modal -->
+<!-- Modal -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-header">
       <h3 id="modal-title">Tạo đơn mới</h3>
     </div>
     <div class="modal-body" id="modal-body"></div>
-    <p class="error-msg" id="modal-error" style="margin: 0 18px;"></p>
+    <p class="error-msg" id="modal-error" style="margin:0 18px;"></p>
     <div class="modal-footer">
       <button class="btn btn-secondary" id="modal-cancel">Hủy</button>
       <button class="btn btn-primary"   id="modal-save">Lưu</button>
@@ -568,9 +597,9 @@ input[type=number]:focus { border-color: var(--accent); }
 'use strict';
 
 // ============================================================
-// PRODUCT POOL  — auto-sorted A–Z (Vietnamese)
+// FRUITS — product list (unchanged from previous versions)
 // ============================================================
-const PRODUCT_LIST = [
+const FRUITS_LIST = [
   "Bắp","Bí Ngô","Cà Chua","Cà Rốt","Chanh",
   "Dâu Tây","Đậu","Dừa","Dưa Hấu","Đu đủ",
   "Khế","Mãng Cầu","Nấm","Nhân Sâm","Nho",
@@ -580,7 +609,24 @@ const PRODUCT_LIST = [
 ].sort((a, b) => a.localeCompare(b, 'vi'));
 
 // ============================================================
-// MUTATION LIST  — auto-sorted A–Z
+// FLOWERS — product → allowed colors mapping (PATCH 4.4)
+// ============================================================
+const FLOWERS_COLORS = {
+  "Tulip":           ["Trắng","Vàng","Cam","Hồng","Tím","Xanh","Đỏ"],
+  "Hoa Anh Đào":     ["Trắng","Hồng tươi","Hồng nhạt","Hồng","Tím","Xanh","Đỏ","Vàng"],
+  "Hoa Mận":         ["Trắng","Đỏ tươi","Hồng","Tím","Xanh","Đỏ","Vàng"],
+  "Hoa Đỗ Quyên":    ["Trắng","Hồng nhạt","Hồng","Tím","Xanh","Đỏ","Vàng"],
+  "Hoa Mộc Lan":     ["Trắng","Xanh da trời","Hồng","Tím","Xanh","Đỏ","Vàng"],
+  "Hoa Diên Vĩ":     ["Xanh da trời","Hồng nhạt","Tím","Xanh","Đỏ","Vàng","Trắng"],
+  "Hoa Nghệ Tây":    ["Hồng","Tím","Xanh","Đỏ","Vàng","Trắng"],
+  "Hoa Hải Quỳ":     ["Hồng","Tím","Xanh","Đỏ","Vàng","Trắng"],
+  "Dạ Lan Hương":    ["Hồng","Tím","Xanh","Đỏ","Vàng","Trắng"],
+  "Hoa Thủy Tiên":   ["Vàng nhạt","Hồng","Tím","Xanh","Đỏ","Vàng","Trắng"]
+};
+const FLOWERS_LIST = Object.keys(FLOWERS_COLORS).sort((a, b) => a.localeCompare(b, 'vi'));
+
+// ============================================================
+// MUTATION LIST — shared across both tabs
 // ============================================================
 const MUTATIONS = [
   "Ánh vàng","Ánh trắng","Ảo ảnh","Ẩm ướt",
@@ -593,96 +639,146 @@ const MUTATIONS = [
 ].sort((a, b) => a.localeCompare(b, 'vi'));
 
 // ============================================================
-// APP STATE  (no persistence — resets on refresh)
+// PATCH 4.4 — PER-TAB STATE
+//
+// Each tab holds its own:
+//   - orders      : array of order objects
+//   - nextId      : incrementing order id counter
+//   - selectedId  : currently selected order id (or null)
+//   - stock       : warehouse stock keyed by stockKey (see below)
+//   - sortState   : column sort preference
+//
+// Stock key conventions:
+//   Fruits standard  : product name            e.g. "Táo"
+//   Fruits mutation  : same key, .mutation[mutType]
+//   Flowers standard : "product|||color"        e.g. "Tulip|||Hồng"
+//   Flowers mutation : same key, .mutation[mutType]
+//
+// This keeps all lookups O(1) and avoids nested key hell.
 // ============================================================
-let orders     = [];   // [{ id, name, included, lines:[{product,qty,mutation}] }]
-let nextId     = 1;
-let editingId  = null; // null = new order, number = editing existing
-let selectedId = null; // which order drives the dashboard
-
-/*
- * STOCK STATE
- * stock[product] = {
- *   normal   : Number,                — regular stock
- *   mutation : { [mutName]: Number }  — per-mutation-type stock
- * }
- * All values clamped >= 0.
- */
-const stock = {};
-function initStockForProduct(p) {
-  if (stock[p]) return;
-  stock[p] = { normal: 0, mutation: {} };
-  MUTATIONS.forEach(m => { stock[p].mutation[m] = 0; });
+function makeTabState() {
+  return { orders: [], nextId: 1, selectedId: null, stock: {}, sortState: { col: null, dir: null } };
 }
-PRODUCT_LIST.forEach(initStockForProduct);
+const TAB_STATE = {
+  fruits:  makeTabState(),
+  flowers: makeTabState()
+};
 
-// Dashboard sort state
-let sortState = { col: null, dir: null };
+let activeTab = 'fruits'; // 'fruits' | 'flowers'
+
+// Convenient getters for "current tab's data"
+function T()         { return TAB_STATE[activeTab]; }
+function tabOrders() { return T().orders; }
+function tabStock()  { return T().stock; }
+
+// Products list for active tab
+function tabProducts() { return activeTab === 'fruits' ? FRUITS_LIST : FLOWERS_LIST; }
+
+// ── editingId is per-modal-open, not per-tab, so it stays global ──
+let editingId = null;
 
 // ============================================================
-// HELPERS
+// STOCK KEY HELPERS
 // ============================================================
 
-/** Sum all mutation-type stock for a product */
-function totalMutStock(p) {
-  return MUTATIONS.reduce((s, m) => s + (stock[p].mutation[m] || 0), 0);
+/**
+ * stockKey(line) — returns the string key used to index into tabStock().
+ * Fruits:  product name
+ * Flowers: "product|||color"
+ */
+function stockKey(line) {
+  if (activeTab === 'flowers' && line.color) {
+    return `${line.product}|||${line.color}`;
+  }
+  return line.product;
 }
 
 /**
- * computeTotals()
- * Aggregates across ALL included orders.
- * Returns { [product]: { req, reqMut, stdReq, reqByMut } }
+ * stockKeyRaw(product, color) — for inventory table rows
  */
+function stockKeyRaw(product, color) {
+  if (activeTab === 'flowers' && color) return `${product}|||${color}`;
+  return product;
+}
+
+/**
+ * initStockForKey(key) — ensure a stock entry exists for this key
+ */
+function initStockForKey(key) {
+  if (tabStock()[key]) return;
+  tabStock()[key] = { normal: 0, mutation: {} };
+  MUTATIONS.forEach(m => { tabStock()[key].mutation[m] = 0; });
+}
+
+// Initialise all fruits stock upfront
+FRUITS_LIST.forEach(p => initStockForKey(p));
+
+// ============================================================
+// TOTAL MUT STOCK helper
+// ============================================================
+function totalMutStock(key) {
+  const s = tabStock()[key];
+  if (!s) return 0;
+  return MUTATIONS.reduce((acc, m) => acc + (s.mutation[m] || 0), 0);
+}
+
+// ============================================================
+// computeTotals()
+// Aggregates quantities across all INCLUDED orders for active tab.
+// For flowers: dashKey = "product|||color"
+// Returns { [dashKey]: { req, reqMut, stdReq, reqByMut } }
+// ============================================================
 function computeTotals() {
   const totals = {};
-  PRODUCT_LIST.forEach(p => {
-    totals[p] = { req: 0, reqMut: 0, stdReq: 0, reqByMut: {} };
-    MUTATIONS.forEach(m => { totals[p].reqByMut[m] = 0; });
-  });
 
-  orders
+  function ensure(k) {
+    if (!totals[k]) {
+      totals[k] = { req: 0, reqMut: 0, stdReq: 0, reqByMut: {} };
+      MUTATIONS.forEach(m => { totals[k].reqByMut[m] = 0; });
+    }
+  }
+
+  tabOrders()
     .filter(o => o.included)
     .forEach(o => o.lines.forEach(l => {
       if (l.qty <= 0) return;
-      totals[l.product].req += l.qty;
+      const k = stockKey(l);
+      ensure(k);
+      totals[k].req += l.qty;
       if (l.mutation) {
-        totals[l.product].reqMut += l.qty;
-        totals[l.product].reqByMut[l.mutation] =
-          (totals[l.product].reqByMut[l.mutation] || 0) + l.qty;
+        totals[k].reqMut += l.qty;
+        totals[k].reqByMut[l.mutation] = (totals[k].reqByMut[l.mutation] || 0) + l.qty;
       }
     }));
 
-  PRODUCT_LIST.forEach(p => {
-    totals[p].stdReq = totals[p].req - totals[p].reqMut;
+  Object.keys(totals).forEach(k => {
+    totals[k].stdReq = totals[k].req - totals[k].reqMut;
   });
 
   return totals;
 }
 
-/**
- * getDashboardProducts(totals)
- * Selected order's products first, then others with req > 0.
- */
+// ============================================================
+// getDashboardProducts(totals)
+// Returns ordered list of dashboard keys, selected order's keys first.
+// ============================================================
 function getDashboardProducts(totals) {
-  const selProds = [];
-  const selSet   = new Set();
-
-  if (selectedId) {
-    const order = orders.find(o => o.id === selectedId);
-    if (order) {
-      order.lines.forEach(l => {
-        if (!selSet.has(l.product)) { selProds.push(l.product); selSet.add(l.product); }
-      });
-    }
+  const selKeys = [];
+  const selSet  = new Set();
+  const sel = tabOrders().find(o => o.id === T().selectedId);
+  if (sel) {
+    sel.lines.forEach(l => {
+      const k = stockKey(l);
+      if (!selSet.has(k)) { selKeys.push(k); selSet.add(k); }
+    });
   }
-
-  const others = PRODUCT_LIST.filter(p => !selSet.has(p) && (totals[p] || {}).req > 0);
-  return [...selProds, ...others];
+  const others = Object.keys(totals).filter(k => !selSet.has(k) && totals[k].req > 0);
+  return [...selKeys, ...others];
 }
 
-/**
- * gapBadge(req, stk) — 3-level semantic badge
- */
+// ============================================================
+// gapBadge — unchanged from previous versions
+// ============================================================
 function gapBadge(req, stk) {
   if (req === 0) return `<span class="gap-badge gap-zero">—</span>`;
   const gap = req - stk;
@@ -692,306 +788,249 @@ function gapBadge(req, stk) {
 }
 
 // ============================================================
-// PATCH 4.2 — isOrderCompletable(orderId)
-//
-// An order is "ready to complete" when EVERY line in it is
-// fully covered by current warehouse stock:
-//   - Standard line (no mutation): stock[p].normal >= qty
-//   - Mutation line: stock[p].mutation[mutationType] >= qty
-//
-// Returns true only if ALL lines pass AND the order has >= 1 line.
+// displayLabel(dashKey)
+// Human-readable label for a dashboard key.
+// Fruits: product name; Flowers: "product (color)"
 // ============================================================
-function isOrderCompletable(orderId) {
-  const order = orders.find(o => o.id === orderId);
-  if (!order || order.lines.length === 0) return false;
+function displayLabel(dashKey) {
+  if (dashKey.includes('|||')) {
+    const [prod, color] = dashKey.split('|||');
+    return `${prod} <span class="line-color" style="font-size:0.7rem">${color}</span>`;
+  }
+  return dashKey;
+}
 
+// ============================================================
+// isOrderCompletable(order) — checks if ALL lines are stocked
+// ============================================================
+function isOrderCompletable(order) {
+  if (!order || order.lines.length === 0) return false;
   return order.lines.every(l => {
-    if (l.qty <= 0) return true; // zero-qty lines don't block
-    initStockForProduct(l.product); // safety
+    if (l.qty <= 0) return true;
+    const k = stockKey(l);
+    initStockForKey(k);
     if (l.mutation) {
-      return (stock[l.product].mutation[l.mutation] || 0) >= l.qty;
+      return (tabStock()[k].mutation[l.mutation] || 0) >= l.qty;
     } else {
-      return stock[l.product].normal >= l.qty;
+      return (tabStock()[k].normal || 0) >= l.qty;
     }
   });
 }
 
-/**
- * updateReadyState()
- * Called after any stock change or order change.
- * Adds/removes .ready class + updates badge on all order cards.
- * Also used by refreshDataRow to update live as inventory changes.
- */
+// ============================================================
+// lineStockDisplay(line)
+// Returns "stock/qty" string + CSS class for coloring.
+// PATCH 4.4 item 3.
+// ============================================================
+function lineStockDisplay(line) {
+  if (line.qty <= 0) return { text: `0/${line.qty}`, cls: 'ok' };
+  const k = stockKey(line);
+  initStockForKey(k);
+  let avail;
+  if (line.mutation) {
+    avail = tabStock()[k].mutation[line.mutation] || 0;
+  } else {
+    avail = tabStock()[k].normal || 0;
+  }
+  const cls = avail >= line.qty ? 'ok' : avail === 0 ? 'miss' : 'low';
+  return { text: `${avail}/${line.qty}`, cls };
+}
+
+// ============================================================
+// updateReadyState()
+// Toggles .ready class + badge display on all order cards.
+// Also disables/enables the Complete button per card.
+// ============================================================
 function updateReadyState() {
   document.querySelectorAll('.order-card').forEach(card => {
-    const oid     = parseInt(card.dataset.id, 10);
-    const ready   = isOrderCompletable(oid);
+    const oid   = parseInt(card.dataset.id, 10);
+    const order = tabOrders().find(o => o.id === oid);
+    const ready = order ? isOrderCompletable(order) : false;
     card.classList.toggle('ready', ready);
-
-    // Ensure badge element exists (it is injected during renderOrders)
     const badge = card.querySelector('.ready-badge');
     if (badge) badge.style.display = ready ? '' : 'none';
+    // Enable/disable complete button
+    const cBtn = card.querySelector('[data-action="complete"]');
+    if (cBtn) cBtn.disabled = !ready;
   });
 }
 
 // ============================================================
-// SEARCHABLE DROPDOWN COMPONENT
-// Popup appended to <body> + positioned via getBoundingClientRect()
-// — never clipped by any ancestor overflow.
-// Returns { wrapper, getValue, setValue }
+// SEARCHABLE DROPDOWN COMPONENT — unchanged from 4.3
 // ============================================================
 function createSearchableDropdown(items, currentValue, placeholder) {
   placeholder = placeholder || '— chọn —';
-
   const wrapper = document.createElement('div');
   wrapper.className = 'sd-wrapper';
-
   const display = document.createElement('input');
-  display.type = 'text';
-  display.className = 'sd-input';
-  display.readOnly = true;
-  display.placeholder = placeholder;
+  display.type = 'text'; display.className = 'sd-input';
+  display.readOnly = true; display.placeholder = placeholder;
   display.value = currentValue || '';
-
   const arrow = document.createElement('span');
-  arrow.className = 'sd-arrow';
-  arrow.textContent = '▼';
-
-  // Popup lives on <body> to escape overflow contexts
+  arrow.className = 'sd-arrow'; arrow.textContent = '▼';
   const popup = document.createElement('div');
   popup.className = 'sd-popup';
   document.body.appendChild(popup);
-
   const searchInput = document.createElement('input');
-  searchInput.type = 'text';
-  searchInput.className = 'sd-search';
+  searchInput.type = 'text'; searchInput.className = 'sd-search';
   searchInput.placeholder = 'Tìm kiếm…';
-
-  const listEl = document.createElement('div');
-  listEl.className = 'sd-list';
-
-  popup.appendChild(searchInput);
-  popup.appendChild(listEl);
-  wrapper.appendChild(display);
-  wrapper.appendChild(arrow);
-
-  let currentVal    = currentValue || null;
+  const listEl = document.createElement('div'); listEl.className = 'sd-list';
+  popup.appendChild(searchInput); popup.appendChild(listEl);
+  wrapper.appendChild(display); wrapper.appendChild(arrow);
+  let currentVal = currentValue || null;
   let filteredItems = [...items];
-  let hiIdx         = -1;
-
+  let hiIdx = -1;
   function positionPopup() {
     const rect = display.getBoundingClientRect();
     popup.style.left  = rect.left + 'px';
     popup.style.top   = (rect.bottom + 4) + 'px';
     popup.style.width = rect.width + 'px';
   }
-
   function renderList() {
     listEl.innerHTML = '';
     if (filteredItems.length === 0) {
       const e = document.createElement('div');
-      e.className = 'sd-empty';
-      e.textContent = 'Không tìm thấy';
-      listEl.appendChild(e);
-      return;
+      e.className = 'sd-empty'; e.textContent = 'Không tìm thấy';
+      listEl.appendChild(e); return;
     }
     filteredItems.forEach((item, idx) => {
       const el = document.createElement('div');
-      el.className = 'sd-item'
-        + (item === currentVal ? ' chosen' : '')
-        + (idx === hiIdx ? ' hi' : '');
+      el.className = 'sd-item' + (item === currentVal ? ' chosen' : '') + (idx === hiIdx ? ' hi' : '');
       el.textContent = item;
-      el.addEventListener('mousedown', e => { e.preventDefault(); selectItem(item); });
+      el.addEventListener('mousedown', ev => { ev.preventDefault(); selectItem(item); });
       listEl.appendChild(el);
     });
   }
-
   function filter(q) {
-    filteredItems = q.trim()
-      ? items.filter(i => i.toLowerCase().includes(q.toLowerCase()))
-      : [...items];
-    hiIdx = -1;
-    renderList();
+    filteredItems = q.trim() ? items.filter(i => i.toLowerCase().includes(q.toLowerCase())) : [...items];
+    hiIdx = -1; renderList();
   }
-
   function open() {
-    document.querySelectorAll('.sd-popup.open').forEach(p => {
-      if (p !== popup) p.classList.remove('open');
-    });
-    positionPopup();
-    popup.classList.add('open');
-    display.classList.add('active-drop');
-    searchInput.value = '';
-    filter('');
-    setTimeout(() => {
-      const chosen = listEl.querySelector('.chosen');
-      if (chosen) chosen.scrollIntoView({ block: 'nearest' });
-      searchInput.focus();
-    }, 0);
+    document.querySelectorAll('.sd-popup.open').forEach(p => { if (p !== popup) p.classList.remove('open'); });
+    positionPopup(); popup.classList.add('open'); display.classList.add('active-drop');
+    searchInput.value = ''; filter('');
+    setTimeout(() => { const c = listEl.querySelector('.chosen'); if (c) c.scrollIntoView({ block: 'nearest' }); searchInput.focus(); }, 0);
   }
-
-  function close() {
-    popup.classList.remove('open');
-    display.classList.remove('active-drop');
-  }
-
-  function selectItem(item) {
-    currentVal = item;
-    display.value = item;
-    close();
-  }
-
+  function close() { popup.classList.remove('open'); display.classList.remove('active-drop'); }
+  function selectItem(item) { currentVal = item; display.value = item; close(); wrapper.dispatchEvent(new Event('sd-change')); }
   function getValue() { return currentVal; }
   function setValue(v) { currentVal = v; display.value = v || ''; }
-
-  display.addEventListener('click', () => {
-    popup.classList.contains('open') ? close() : open();
-  });
-
+  function updateItems(newItems) {
+    filteredItems = [...newItems];
+    // replace internal items reference
+    items.length = 0; newItems.forEach(x => items.push(x));
+  }
+  display.addEventListener('click', () => popup.classList.contains('open') ? close() : open());
   searchInput.addEventListener('input', () => filter(searchInput.value));
-
   searchInput.addEventListener('keydown', e => {
     const els = [...listEl.querySelectorAll('.sd-item')];
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      hiIdx = Math.min(hiIdx + 1, filteredItems.length - 1);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      hiIdx = Math.max(hiIdx - 1, 0);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (hiIdx >= 0 && filteredItems[hiIdx]) selectItem(filteredItems[hiIdx]);
-      return;
-    } else if (e.key === 'Escape') {
-      close(); return;
-    }
-    els.forEach((el, i) => {
-      el.classList.toggle('hi', i === hiIdx);
-      el.classList.remove('chosen');
-    });
+    if (e.key === 'ArrowDown')      { e.preventDefault(); hiIdx = Math.min(hiIdx + 1, filteredItems.length - 1); }
+    else if (e.key === 'ArrowUp')   { e.preventDefault(); hiIdx = Math.max(hiIdx - 1, 0); }
+    else if (e.key === 'Enter')     { e.preventDefault(); if (hiIdx >= 0 && filteredItems[hiIdx]) selectItem(filteredItems[hiIdx]); return; }
+    else if (e.key === 'Escape')    { close(); return; }
+    els.forEach((el, i) => { el.classList.toggle('hi', i === hiIdx); el.classList.remove('chosen'); });
     if (els[hiIdx]) els[hiIdx].scrollIntoView({ block: 'nearest' });
   });
-
   window.addEventListener('scroll', () => { if (popup.classList.contains('open')) positionPopup(); }, true);
   window.addEventListener('resize', () => { if (popup.classList.contains('open')) positionPopup(); });
-
-  document.addEventListener('mousedown', e => {
-    if (!wrapper.contains(e.target) && !popup.contains(e.target)) close();
-  }, true);
-
-  // Cleanup popup from body when wrapper leaves DOM
-  const observer = new MutationObserver(() => {
-    if (!document.body.contains(wrapper)) {
-      popup.remove();
-      observer.disconnect();
-    }
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  return { wrapper, getValue, setValue };
+  document.addEventListener('mousedown', e => { if (!wrapper.contains(e.target) && !popup.contains(e.target)) close(); }, true);
+  const obs = new MutationObserver(() => { if (!document.body.contains(wrapper)) { popup.remove(); obs.disconnect(); } });
+  obs.observe(document.body, { childList: true, subtree: true });
+  return { wrapper, getValue, setValue, updateItems };
 }
 
 // ============================================================
 // RENDER INVENTORY TABLE
-// Columns: Sản phẩm | Yêu cầu | Còn thiếu | Ghi chú
-// Sections: 📦 Standard (stdReq>0) and ⚡ Mutation (reqMut>0)
-// A product with both appears in both sections as separate rows.
 // ============================================================
 function renderInventory() {
-  const hasSelected = selectedId !== null && orders.some(o => o.id === selectedId);
+  const sel = T().selectedId;
+  const hasSelected = sel !== null && tabOrders().some(o => o.id === sel);
   document.getElementById('inv-placeholder').style.display = hasSelected ? 'none' : '';
   document.getElementById('inv-panel').style.display       = hasSelected ? ''     : 'none';
   if (!hasSelected) return;
 
   const totals    = computeTotals();
   const tbody     = document.getElementById('inventory-tbody');
-  const dashProds = getDashboardProducts(totals);
+  const dashKeys  = getDashboardProducts(totals);
 
-  // Preserve expanded editor rows across re-render (key = "product|section")
   const expanded = new Set(
     [...tbody.querySelectorAll('tr.inv-row.expanded')].map(r => r.dataset.rowkey)
   );
   tbody.innerHTML = '';
 
-  if (dashProds.length === 0) {
+  if (dashKeys.length === 0) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     td.colSpan = 4; td.style.cssText = 'padding:16px;text-align:center;color:var(--text-muted)';
     td.textContent = 'Đơn được chọn chưa có sản phẩm.';
     tr.appendChild(td); tbody.appendChild(tr);
-    updateReadyState();
-    return;
+    updateReadyState(); return;
   }
 
-  const stdProds = dashProds.filter(p => totals[p].stdReq > 0);
-  const mutProds = dashProds.filter(p => totals[p].reqMut > 0);
+  const srt = T().sortState;
+  const stdKeys = dashKeys.filter(k => totals[k].stdReq > 0);
+  const mutKeys = dashKeys.filter(k => totals[k].reqMut > 0);
 
-  function sortProducts(prods, section) {
-    if (!sortState.col || !sortState.dir) return [...prods];
-    return [...prods].sort((a, b) => {
-      let va, vb;
+  function sortKeys(keys, section) {
+    if (!srt.col || !srt.dir) return [...keys];
+    return [...keys].sort((a, b) => {
       const isStd = section === 'std';
-      switch (sortState.col) {
+      let va, vb;
+      switch (srt.col) {
         case 'req':
           va = isStd ? totals[a].stdReq : totals[a].reqMut;
           vb = isStd ? totals[b].stdReq : totals[b].reqMut;
           break;
-        case 'gap':
-          va = isStd ? totals[a].stdReq - stock[a].normal       : totals[a].reqMut - totalMutStock(a);
-          vb = isStd ? totals[b].stdReq - stock[b].normal       : totals[b].reqMut - totalMutStock(b);
+        case 'gap': {
+          const sa = tabStock()[a] || { normal: 0 };
+          const sb = tabStock()[b] || { normal: 0 };
+          va = isStd ? totals[a].stdReq - sa.normal : totals[a].reqMut - totalMutStock(a);
+          vb = isStd ? totals[b].stdReq - sb.normal : totals[b].reqMut - totalMutStock(b);
           break;
+        }
         default: return 0;
       }
-      return sortState.dir === 'asc' ? va - vb : vb - va;
+      return srt.dir === 'asc' ? va - vb : vb - va;
     });
   }
 
   function appendSubheader(label) {
-    const tr = document.createElement('tr');
-    tr.className = 'inv-section-header';
-    const td = document.createElement('td');
-    td.colSpan = 4; td.textContent = label;
+    const tr = document.createElement('tr'); tr.className = 'inv-section-header';
+    const td = document.createElement('td'); td.colSpan = 4; td.textContent = label;
     tr.appendChild(td); tbody.appendChild(tr);
   }
 
-  if (stdProds.length > 0) {
+  if (stdKeys.length > 0) {
     appendSubheader('📦 Sản phẩm thường');
-    sortProducts(stdProds, 'std').forEach(p => appendProductRow(p, 'std', totals, expanded));
+    sortKeys(stdKeys, 'std').forEach(k => appendProductRow(k, 'std', totals, expanded));
   }
-  if (mutProds.length > 0) {
+  if (mutKeys.length > 0) {
     appendSubheader('⚡ Sản phẩm đột biến');
-    sortProducts(mutProds, 'mut').forEach(p => appendProductRow(p, 'mut', totals, expanded));
+    sortKeys(mutKeys, 'mut').forEach(k => appendProductRow(k, 'mut', totals, expanded));
   }
-
-  // PATCH 4.2 — update ready badges after inventory re-render
   updateReadyState();
 }
 
-/**
- * appendProductRow(p, section, totals, expanded)
- * Adds one data row + one hidden editor row to #inventory-tbody.
- */
-function appendProductRow(p, section, totals, expanded) {
+function appendProductRow(dashKey, section, totals, expanded) {
   const tbody  = document.getElementById('inventory-tbody');
-  const t      = totals[p];
+  const t      = totals[dashKey];
   const isStd  = section === 'std';
-  const rowKey = `${p}|${section}`;
+  const rowKey = `${dashKey}|${section}`;
   const isOpen = expanded.has(rowKey);
-  const req    = isStd ? t.stdReq  : t.reqMut;
-  const stk    = isStd ? stock[p].normal : totalMutStock(p);
+  const req    = isStd ? t.stdReq : t.reqMut;
+  initStockForKey(dashKey);
+  const stk    = isStd ? (tabStock()[dashKey].normal || 0) : totalMutStock(dashKey);
 
   const missingMuts = isStd ? [] : MUTATIONS.filter(m =>
-    (t.reqByMut[m] || 0) > (stock[p].mutation[m] || 0)
+    (t.reqByMut[m] || 0) > (tabStock()[dashKey].mutation[m] || 0)
   );
 
-  // ---- DATA ROW ----
   const dataRow = document.createElement('tr');
   dataRow.className = 'inv-row' + (isOpen ? ' expanded' : '');
-  dataRow.dataset.product = p;
+  dataRow.dataset.dashkey = dashKey;
   dataRow.dataset.rowkey  = rowKey;
   dataRow.dataset.section = section;
 
-  // Note cell (mutation section only)
   let noteCellHTML = '';
   if (!isStd) {
     if (missingMuts.length === 0) {
@@ -1009,82 +1048,62 @@ function appendProductRow(p, section, totals, expanded) {
   }
 
   dataRow.innerHTML = `
-    <td><div class="inv-name"><span class="inv-expand-icon">▶</span>${p}</div></td>
+    <td><div class="inv-name"><span class="inv-expand-icon">▶</span>${displayLabel(dashKey)}</div></td>
     <td><span class="${isStd ? 'inv-req' : 'inv-req-mut'}">${req}</span></td>
     <td>${gapBadge(req, stk)}</td>
     <td class="note-cell hide-sm">${noteCellHTML}</td>
   `;
   tbody.appendChild(dataRow);
 
-  // Wire "View all" button in note cell
   if (!isStd && missingMuts.length > 3) {
-    const viewBtn = dataRow.querySelector('.note-viewall-btn');
-    if (viewBtn) {
-      const hm = JSON.parse(viewBtn.dataset.hidden);
-      wireViewAllBtn(viewBtn, hm, viewBtn.closest('.note-missing'));
-    }
+    const vb = dataRow.querySelector('.note-viewall-btn');
+    if (vb) wireViewAllBtn(vb, JSON.parse(vb.dataset.hidden), vb.closest('.note-missing'));
   }
 
-  // ---- EDITOR ROW ----
+  // Editor row
   const editorRow = document.createElement('tr');
   editorRow.className = 'inv-editor-row';
   editorRow.style.display = isOpen ? '' : 'none';
-
-  const editorTd  = document.createElement('td');
-  editorTd.colSpan = 4;
-  const editorDiv = document.createElement('div');
-  editorDiv.className = 'inv-editor';
+  const editorTd  = document.createElement('td'); editorTd.colSpan = 4;
+  const editorDiv = document.createElement('div'); editorDiv.className = 'inv-editor';
 
   if (isStd) {
-    // Standard editor: one normal-stock stepper
-    const blk   = document.createElement('div');
-    blk.className = 'stock-block';
-    const lbl   = document.createElement('div');
-    lbl.className = 'stock-block-label normal';
+    const blk = document.createElement('div'); blk.className = 'stock-block';
+    const lbl = document.createElement('div'); lbl.className = 'stock-block-label normal';
     lbl.textContent = '📦 Kho thường';
     blk.appendChild(lbl);
-    const ns = buildStepper(stock[p].normal, v => {
-      stock[p].normal = v;
-      refreshDataRow(dataRow, p, section, computeTotals());
-      updateReadyState(); // PATCH 4.2 — live ready check on stock edit
+    const ns = buildStepper(tabStock()[dashKey].normal, v => {
+      tabStock()[dashKey].normal = v;
+      refreshDataRow(dataRow, dashKey, section, computeTotals());
+      updateReadyState();
     });
-    ns.addEventListener('click', e => e.stopPropagation());
+    ns.addEventListener('click', ev => ev.stopPropagation());
     blk.appendChild(ns);
     editorDiv.appendChild(blk);
-
   } else {
-    // Mutation editor: per-mutation-type stepper table
-    const blk   = document.createElement('div');
-    blk.className = 'stock-block';
-    const lbl   = document.createElement('div');
-    lbl.className = 'stock-block-label mutation';
+    const blk = document.createElement('div'); blk.className = 'stock-block';
+    const lbl = document.createElement('div'); lbl.className = 'stock-block-label mutation';
     lbl.textContent = '⚡ Kho đột biến (theo từng loại)';
     blk.appendChild(lbl);
-
-    const activeMuts = MUTATIONS.filter(m =>
-      (t.reqByMut[m] || 0) > 0 || (stock[p].mutation[m] || 0) > 0
-    );
+    const activeMuts = MUTATIONS.filter(m => (t.reqByMut[m] || 0) > 0 || (tabStock()[dashKey].mutation[m] || 0) > 0);
     const hiddenMuts = MUTATIONS.filter(m => !activeMuts.includes(m));
-
-    const mutTable = document.createElement('table');
-    mutTable.className = 'mut-stock-table';
+    const mutTable = document.createElement('table'); mutTable.className = 'mut-stock-table';
 
     function buildMutRow(m) {
-      const tr     = document.createElement('tr');
-      const reqV   = t.reqByMut[m] || 0;
+      const tr = document.createElement('tr');
+      const reqV = t.reqByMut[m] || 0;
       const nameTd = document.createElement('td'); nameTd.textContent = m;
       const reqTd  = document.createElement('td');
       reqTd.innerHTML = `<span style="color:var(--text-muted);font-size:0.7rem">YC:</span> <span style="color:var(--accent2)">${reqV}</span>`;
-      const stpTd  = document.createElement('td');
-      const s = buildStepper(stock[p].mutation[m] || 0, v => {
-        stock[p].mutation[m] = v;
-        refreshDataRow(dataRow, p, section, computeTotals());
-        updateReadyState(); // PATCH 4.2 — live ready check on stock edit
+      const stpTd = document.createElement('td');
+      const s = buildStepper(tabStock()[dashKey].mutation[m] || 0, v => {
+        tabStock()[dashKey].mutation[m] = v;
+        refreshDataRow(dataRow, dashKey, section, computeTotals());
+        updateReadyState();
       });
-      s.addEventListener('click', e => e.stopPropagation());
+      s.addEventListener('click', ev => ev.stopPropagation());
       stpTd.appendChild(s);
-      tr.append(nameTd, reqTd, stpTd);
-      return tr;
+      tr.append(nameTd, reqTd, stpTd); return tr;
     }
 
     if (activeMuts.length === 0) {
@@ -1099,129 +1118,83 @@ function appendProductRow(p, section, totals, expanded) {
 
     if (hiddenMuts.length > 0) {
       const toggleBtn = document.createElement('button');
-      toggleBtn.style.cssText =
-        'background:none;border:none;color:var(--text-muted);font-size:0.73rem;' +
-        'cursor:pointer;padding:4px 0;text-decoration:underline;text-align:left';
+      toggleBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);font-size:0.73rem;cursor:pointer;padding:4px 0;text-decoration:underline;text-align:left';
       toggleBtn.textContent = `+ Xem tất cả (${MUTATIONS.length} loại)`;
-      toggleBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        toggleBtn.remove();
+      toggleBtn.addEventListener('click', ev => {
+        ev.stopPropagation(); toggleBtn.remove();
         hiddenMuts.forEach(m => mutTable.appendChild(buildMutRow(m)));
         if (!blk.contains(mutTable)) blk.appendChild(mutTable);
-        const closeToggle = document.createElement('button');
-        closeToggle.style.cssText =
-          'background:none;border:1px solid var(--border);border-radius:4px;' +
-          'color:var(--text-muted);font-size:0.7rem;cursor:pointer;padding:2px 8px;margin-top:4px';
-        closeToggle.textContent = '✕ Thu gọn';
-        closeToggle.addEventListener('click', ev => {
-          ev.stopPropagation();
-          hiddenMuts.forEach(m => {
-            mutTable.querySelectorAll('tr').forEach(r => {
-              if (r.cells[0] && r.cells[0].textContent === m) r.remove();
-            });
-          });
-          closeToggle.remove();
-          blk.appendChild(toggleBtn);
+        const closeTgl = document.createElement('button');
+        closeTgl.style.cssText = 'background:none;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);font-size:0.7rem;cursor:pointer;padding:2px 8px;margin-top:4px';
+        closeTgl.textContent = '✕ Thu gọn';
+        closeTgl.addEventListener('click', ev2 => {
+          ev2.stopPropagation();
+          hiddenMuts.forEach(m => { mutTable.querySelectorAll('tr').forEach(r => { if (r.cells[0] && r.cells[0].textContent === m) r.remove(); }); });
+          closeTgl.remove(); blk.appendChild(toggleBtn);
         });
-        blk.appendChild(closeToggle);
+        blk.appendChild(closeTgl);
       });
       blk.appendChild(toggleBtn);
     }
-
     editorDiv.appendChild(blk);
   }
 
-  editorTd.appendChild(editorDiv);
-  editorRow.appendChild(editorTd);
+  editorTd.appendChild(editorDiv); editorRow.appendChild(editorTd);
   tbody.appendChild(editorRow);
-
   dataRow.addEventListener('click', () => {
     const opening = dataRow.classList.toggle('expanded');
     editorRow.style.display = opening ? '' : 'none';
   });
 }
 
-/**
- * wireViewAllBtn(btn, hiddenMuts, container)
- * Attaches expand/collapse logic to a "View all" button inside the note cell.
- */
 function wireViewAllBtn(btn, hiddenMuts, container) {
   btn.addEventListener('click', e => {
-    e.stopPropagation();
-    btn.remove();
+    e.stopPropagation(); btn.remove();
     const expandDiv = document.createElement('div');
     expandDiv.className = 'note-expanded-list';
     expandDiv.textContent = hiddenMuts.join(', ');
     const closeBtn = document.createElement('button');
-    closeBtn.className = 'note-close-btn';
-    closeBtn.textContent = '✕ Thu gọn';
+    closeBtn.className = 'note-close-btn'; closeBtn.textContent = '✕ Thu gọn';
     closeBtn.addEventListener('click', ev => {
-      ev.stopPropagation();
-      expandDiv.remove();
-      closeBtn.remove();
-      const newBtn = document.createElement('button');
-      newBtn.className = 'note-viewall-btn';
-      newBtn.textContent = ` +${hiddenMuts.length} loại`;
-      container.appendChild(newBtn);
-      wireViewAllBtn(newBtn, hiddenMuts, container);
+      ev.stopPropagation(); expandDiv.remove(); closeBtn.remove();
+      const nb = document.createElement('button');
+      nb.className = 'note-viewall-btn'; nb.textContent = ` +${hiddenMuts.length} loại`;
+      container.appendChild(nb); wireViewAllBtn(nb, hiddenMuts, container);
     });
-    container.appendChild(expandDiv);
-    container.appendChild(closeBtn);
+    container.appendChild(expandDiv); container.appendChild(closeBtn);
   });
 }
 
-/**
- * buildStepper(initialVal, onUpdate)
- * Returns a [−] [input] [+] stepper row.
- */
 function buildStepper(initialVal, onUpdate) {
-  const row   = document.createElement('div');
-  row.className = 'stepper-row';
-  const minus = document.createElement('button');
-  minus.className = 'stepper-btn'; minus.textContent = '−';
-  const inp   = document.createElement('input');
-  inp.type = 'number'; inp.className = 'stepper-input';
-  inp.min = 0; inp.value = initialVal;
-  const plus  = document.createElement('button');
-  plus.className = 'stepper-btn'; plus.textContent = '+';
-  function apply(v) {
-    const c = Math.max(0, parseInt(v) || 0);
-    inp.value = c; onUpdate(c);
-  }
+  const row = document.createElement('div'); row.className = 'stepper-row';
+  const minus = document.createElement('button'); minus.className = 'stepper-btn'; minus.textContent = '−';
+  const inp   = document.createElement('input'); inp.type = 'number'; inp.className = 'stepper-input'; inp.min = 0; inp.value = initialVal;
+  const plus  = document.createElement('button'); plus.className = 'stepper-btn'; plus.textContent = '+';
+  function apply(v) { const c = Math.max(0, parseInt(v) || 0); inp.value = c; onUpdate(c); }
   minus.addEventListener('click', () => apply(+inp.value - 1));
   plus.addEventListener('click',  () => apply(+inp.value + 1));
   inp.addEventListener('change',  () => apply(inp.value));
   inp.addEventListener('input',   () => apply(inp.value));
-  row.append(minus, inp, plus);
-  return row;
+  row.append(minus, inp, plus); return row;
 }
 
-/**
- * refreshDataRow(dataRow, p, section, totals)
- * Surgically updates value cells — keeps editor open.
- */
-function refreshDataRow(dataRow, p, section, totals) {
-  const t     = totals[p];
+function refreshDataRow(dataRow, dashKey, section, totals) {
+  const t     = totals[dashKey];
+  if (!t) return;
   const isStd = section === 'std';
-  const req   = isStd ? t.stdReq  : t.reqMut;
-  const stk   = isStd ? stock[p].normal : totalMutStock(p);
-
+  const req   = isStd ? t.stdReq : t.reqMut;
+  initStockForKey(dashKey);
+  const stk   = isStd ? (tabStock()[dashKey].normal || 0) : totalMutStock(dashKey);
   const tds = dataRow.querySelectorAll('td');
-  const reqSpan = tds[1].querySelector('span');
-  if (reqSpan) reqSpan.textContent = req;
+  const reqSpan = tds[1].querySelector('span'); if (reqSpan) reqSpan.textContent = req;
   tds[2].innerHTML = gapBadge(req, stk);
-
   if (!isStd && tds[3]) {
-    const missingMuts = MUTATIONS.filter(m =>
-      (t.reqByMut[m] || 0) > (stock[p].mutation[m] || 0)
-    );
-    const SHOW_MAX  = 3;
-    const shown     = missingMuts.slice(0, SHOW_MAX);
-    const hidden    = missingMuts.slice(SHOW_MAX);
-    const shownTxt  = shown.map(m => `<span style="color:var(--danger)">${m}</span>`).join(', ');
-    const moreHTML  = hidden.length > 0
-      ? `<button class="note-viewall-btn"> +${hidden.length} loại</button>`
-      : '';
+    const missingMuts = MUTATIONS.filter(m => (t.reqByMut[m] || 0) > (tabStock()[dashKey].mutation[m] || 0));
+    const SHOW_MAX = 3;
+    const shown  = missingMuts.slice(0, SHOW_MAX);
+    const hidden = missingMuts.slice(SHOW_MAX);
+    const shownTxt = shown.map(m => `<span style="color:var(--danger)">${m}</span>`).join(', ');
+    const moreHTML = hidden.length > 0 ? `<button class="note-viewall-btn"> +${hidden.length} loại</button>` : '';
     tds[3].innerHTML = missingMuts.length === 0
       ? '<span class="note-ok">✓ Đủ</span>'
       : `<div class="note-missing">Thiếu: ${shownTxt}${moreHTML}</div>`;
@@ -1231,23 +1204,371 @@ function refreshDataRow(dataRow, p, section, totals) {
 }
 
 // ============================================================
-// SORT — column header click handlers
+// selectNextOrder and removeOrder — operate on active tab state
+// ============================================================
+function selectNextOrder(removedIndex) {
+  const orders = tabOrders();
+  if (orders.length === 0) { T().selectedId = null; return; }
+  const idx = Math.min(Math.max(removedIndex, 0), orders.length - 1);
+  T().selectedId = orders[idx].id;
+}
+
+function removeOrder(orderId) {
+  const orders = tabOrders();
+  const idx = orders.findIndex(o => o.id === orderId);
+  if (idx === -1) return -1;
+  orders.splice(idx, 1);
+  return idx;
+}
+
+// ============================================================
+// COMPLETE ORDER — PATCH 4.4 (re-introduced, gated behind ready)
+// Handler is triggered by delegated click on [data-action="complete"].
+// orderId comes from data-order-id attribute on the button (stable).
+// ============================================================
+function completeOrder(orderId) {
+  const order = tabOrders().find(o => o.id === orderId);
+  if (!order) return;
+  if (!isOrderCompletable(order)) return; // double-guard (button should be disabled)
+
+  if (!confirm(`Hoàn thành "${order.name}"?\nKho sẽ bị trừ theo số lượng. Hành động không thể hoàn tác.`)) return;
+
+  // Deduct stock — synchronous, order object captured before any mutation
+  order.lines.forEach(l => {
+    if (l.qty <= 0) return;
+    const k = stockKey(l);
+    initStockForKey(k);
+    if (l.mutation) {
+      tabStock()[k].mutation[l.mutation] = Math.max(0, (tabStock()[k].mutation[l.mutation] || 0) - l.qty);
+    } else {
+      tabStock()[k].normal = Math.max(0, (tabStock()[k].normal || 0) - l.qty);
+    }
+  });
+
+  // Remove order with findIndex+splice guard
+  const wasSelected = (T().selectedId === orderId);
+  const idx = removeOrder(orderId);
+  if (idx === -1) return;
+  if (wasSelected) selectNextOrder(idx);
+
+  renderOrders();
+  renderInventory();
+}
+
+// ============================================================
+// RENDER ORDERS — uses event delegation (wired once at init)
+// ============================================================
+function renderOrders() {
+  const list       = document.getElementById('orders-list');
+  const emptyState = document.getElementById('empty-state');
+  [...list.querySelectorAll('.order-card')].forEach(el => el.remove());
+
+  if (tabOrders().length === 0) {
+    emptyState.style.display = '';
+    T().selectedId = null;
+    renderInventory();
+    return;
+  }
+  emptyState.style.display = 'none';
+
+  tabOrders().forEach(order => {
+    const card = document.createElement('div');
+    card.className = 'order-card'
+      + (order.included ? '' : ' excluded')
+      + (order.id === T().selectedId ? ' selected' : '');
+    card.dataset.id = String(order.id);
+
+    // Lines HTML — "stock/qty" display (PATCH 4.4 item 3)
+    let linesHTML = '';
+    if (order.lines.length === 0) {
+      linesHTML = '<span class="empty-order">Đơn trống</span>';
+    } else {
+      linesHTML = order.lines.map(l => {
+        const sd = lineStockDisplay(l);
+        const colorTag = (activeTab === 'flowers' && l.color)
+          ? `<span class="line-color">🎨 ${l.color}</span>` : '';
+        const mutTag = l.mutation
+          ? `<span class="line-mutation">⚡ ${l.mutation}</span>` : '';
+        return `<div class="product-line">
+          <span class="line-product">${l.product}</span>
+          ${colorTag}
+          <span class="line-qty ${sd.cls}">${sd.text}</span>
+          ${mutTag}
+        </div>`;
+      }).join('');
+    }
+
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="card-title">${order.name}</span>
+        <span class="ready-badge">✅ Có thể hoàn thành</span>
+        <div class="card-controls">
+          <label class="include-label" title="Tính vào tổng">
+            <input type="checkbox" class="include-cb"
+                   data-order-id="${order.id}"
+                   ${order.included ? 'checked' : ''}/>
+            Tính vào tổng
+          </label>
+          <button class="btn-icon complete"
+                  data-action="complete"
+                  data-order-id="${order.id}"
+                  title="Hoàn thành &amp; trừ kho"
+                  disabled>✅ Hoàn thành</button>
+          <button class="btn-icon edit-btn"
+                  data-action="edit"
+                  data-order-id="${order.id}"
+                  title="Chỉnh sửa">✏️ Sửa</button>
+          <button class="btn-icon danger delete-btn"
+                  data-action="delete"
+                  data-order-id="${order.id}"
+                  title="Xóa đơn">🗑 Xóa</button>
+        </div>
+      </div>
+      <div class="card-body">${linesHTML}</div>
+    `;
+    list.appendChild(card);
+  });
+
+  updateReadyState();
+}
+
+// ============================================================
+// DELEGATED EVENT HANDLER — single listener on #orders-list
+// Wired ONCE at init; never re-attached on re-render.
+// ============================================================
+function initOrderListHandler() {
+  const list = document.getElementById('orders-list');
+
+  list.addEventListener('click', e => {
+    // Complete
+    const completeBtn = e.target.closest('[data-action="complete"]');
+    if (completeBtn) {
+      if (completeBtn.disabled) return;
+      const oid = parseInt(completeBtn.dataset.orderId, 10);
+      if (!isNaN(oid)) completeOrder(oid);
+      return;
+    }
+    // Delete
+    const deleteBtn = e.target.closest('[data-action="delete"]');
+    if (deleteBtn) {
+      const oid = parseInt(deleteBtn.dataset.orderId, 10);
+      if (isNaN(oid)) return;
+      const o = tabOrders().find(x => x.id === oid);
+      if (!o) return;
+      if (!confirm(`Xóa "${o.name}"?`)) return;
+      const wasSelected = (T().selectedId === oid);
+      const idx = removeOrder(oid);
+      if (idx === -1) return;
+      if (wasSelected) selectNextOrder(idx);
+      renderOrders(); renderInventory(); return;
+    }
+    // Edit
+    const editBtn = e.target.closest('[data-action="edit"]');
+    if (editBtn) {
+      const oid = parseInt(editBtn.dataset.orderId, 10);
+      if (!isNaN(oid)) openModal(oid); return;
+    }
+    // Ignore include-label (handled by change event below)
+    if (e.target.closest('.include-label')) return;
+    // Select card
+    if (e.target.closest('.card-controls')) return;
+    const card = e.target.closest('.order-card');
+    if (!card) return;
+    const oid = parseInt(card.dataset.id, 10);
+    if (isNaN(oid)) return;
+    T().selectedId = oid;
+    document.querySelectorAll('.order-card').forEach(c =>
+      c.classList.toggle('selected', parseInt(c.dataset.id, 10) === oid)
+    );
+    renderInventory();
+  });
+
+  list.addEventListener('change', e => {
+    const cb = e.target.closest('.include-cb');
+    if (!cb) return;
+    const oid = parseInt(cb.dataset.orderId, 10);
+    if (isNaN(oid)) return;
+    const o = tabOrders().find(x => x.id === oid);
+    if (!o) return;
+    o.included = cb.checked;
+    const card = cb.closest('.order-card');
+    if (card) card.classList.toggle('excluded', !o.included);
+    renderInventory();
+  });
+}
+
+// ============================================================
+// MODAL — ADD / EDIT ORDER
+// createModalLine is tab-aware: Flowers gets a color dropdown.
+// ============================================================
+function openModal(orderId = null) {
+  editingId = orderId;
+  const overlay = document.getElementById('modal-overlay');
+  const body    = document.getElementById('modal-body');
+  const title   = document.getElementById('modal-title');
+  body.innerHTML = ''; hideError();
+  if (orderId !== null) {
+    const order = tabOrders().find(o => o.id === orderId);
+    if (!order) return;
+    title.textContent = `Chỉnh sửa ${order.name}`;
+    order.lines.forEach(l => addModalLine(l));
+  } else {
+    title.textContent = 'Tạo đơn mới';
+    addModalLine();
+  }
+  const addLineBtn = document.createElement('button');
+  addLineBtn.className = 'btn-add-line'; addLineBtn.id = 'add-line-btn';
+  addLineBtn.textContent = '+ Thêm sản phẩm';
+  addLineBtn.addEventListener('click', () => body.insertBefore(createModalLine(null), addLineBtn));
+  body.appendChild(addLineBtn);
+  overlay.classList.add('open'); overlay.scrollTop = 0;
+}
+
+function addModalLine(data = null) {
+  const body   = document.getElementById('modal-body');
+  const addBtn = document.getElementById('add-line-btn');
+  const line   = createModalLine(data);
+  addBtn ? body.insertBefore(line, addBtn) : body.appendChild(line);
+}
+
+function createModalLine(data) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'modal-line';
+  const isFlowers = activeTab === 'flowers';
+
+  // Row 1: product | qty | remove
+  const row1 = document.createElement('div'); row1.className = 'modal-line-row1';
+  const prodItems = isFlowers ? FLOWERS_LIST : FRUITS_LIST;
+  const initProd  = data ? data.product : prodItems[0];
+  const { wrapper: prodWrap, getValue: getProd, setValue: setProd } =
+    createSearchableDropdown([...prodItems], initProd, 'Chọn sản phẩm…');
+  prodWrap.style.flex = '1';
+
+  const qtyInput = document.createElement('input');
+  qtyInput.type = 'number'; qtyInput.className = 'input-qty';
+  qtyInput.min = 0; qtyInput.value = data ? data.qty : 1; qtyInput.placeholder = 'SL';
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'btn-icon danger'; removeBtn.textContent = '×'; removeBtn.title = 'Xóa dòng';
+  removeBtn.addEventListener('click', () => wrapper.remove());
+  row1.append(prodWrap, qtyInput, removeBtn);
+
+  // Row 2 (flowers only): color dropdown
+  let getColor = () => null;
+  let colorWrap = null;
+  if (isFlowers) {
+    const row2 = document.createElement('div'); row2.className = 'modal-line-row2';
+    const colorLabel = document.createElement('span');
+    colorLabel.style.cssText = 'font-size:0.78rem;color:var(--text-muted);white-space:nowrap';
+    colorLabel.textContent = '🎨 Màu sắc:';
+
+    // Build initial color list based on current product
+    const initColors = FLOWERS_COLORS[initProd] || [];
+    const initColor  = (data && data.color && initColors.includes(data.color)) ? data.color : (initColors[0] || null);
+    const { wrapper: cWrap, getValue: getCl, setValue: setCl, updateItems: updateColorItems } =
+      createSearchableDropdown([...initColors], initColor, 'Chọn màu…');
+    cWrap.style.flex = '1';
+    colorWrap = cWrap;
+    getColor = getCl;
+
+    // When product changes, refresh color list
+    prodWrap.addEventListener('sd-change', () => {
+      const p = getProd();
+      const colors = (p && FLOWERS_COLORS[p]) ? FLOWERS_COLORS[p] : [];
+      updateColorItems(colors);
+      // reset color if current value no longer valid
+      const cur = getCl();
+      if (!colors.includes(cur)) setCl(colors[0] || null);
+    });
+
+    row2.append(colorLabel, cWrap);
+    wrapper.appendChild(row1);
+    wrapper.appendChild(row2);
+  } else {
+    wrapper.appendChild(row1);
+  }
+
+  // Row 3 (or 2 for fruits): mutation checkbox + dropdown
+  const mutRow = document.createElement('div');
+  mutRow.className = isFlowers ? 'modal-line-row3' : 'modal-line-row2';
+  const mutLabel = document.createElement('label'); mutLabel.className = 'mutation-check-label';
+  const mutCheck = document.createElement('input'); mutCheck.type = 'checkbox';
+  if (data && data.mutation) mutCheck.checked = true;
+  mutLabel.appendChild(mutCheck);
+  mutLabel.appendChild(document.createTextNode(' Có đột biến?'));
+  const { wrapper: mutWrap, getValue: getMut } =
+    createSearchableDropdown([...MUTATIONS], data ? data.mutation : null, 'Chọn đột biến…');
+  mutWrap.classList.add('mut-wrap');
+  const syncMut = () => { mutWrap.style.display = mutCheck.checked ? '' : 'none'; };
+  mutCheck.addEventListener('change', syncMut); syncMut();
+  mutRow.append(mutLabel, mutWrap);
+  wrapper.appendChild(mutRow);
+
+  wrapper._getData = () => ({
+    product:  getProd() || prodItems[0],
+    color:    isFlowers ? (getColor() || (FLOWERS_COLORS[getProd()] || [])[0] || null) : null,
+    qty:      parseInt(qtyInput.value) || 0,
+    mutation: mutCheck.checked ? getMut() : null
+  });
+
+  return wrapper;
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.querySelectorAll('.sd-popup.open').forEach(p => p.classList.remove('open'));
+  editingId = null;
+}
+function showError(msg) { const el = document.getElementById('modal-error'); el.textContent = msg; el.classList.add('show'); }
+function hideError()    { document.getElementById('modal-error').classList.remove('show'); }
+
+function saveModal() {
+  const body    = document.getElementById('modal-body');
+  const lineEls = [...body.querySelectorAll('.modal-line')];
+  if (lineEls.length === 0) { showError('Đơn cần ít nhất một sản phẩm.'); return; }
+  const lines = lineEls.map(el => el._getData());
+
+  // Duplicate check: flowers uses product+color as identity
+  const seen = new Set();
+  for (const l of lines) {
+    const key = activeTab === 'flowers' ? `${l.product}|||${l.color}` : l.product;
+    if (seen.has(key)) {
+      const label = activeTab === 'flowers' ? `"${l.product}" màu "${l.color}"` : `"${l.product}"`;
+      showError(`Trùng sản phẩm ${label}! Mỗi sản phẩm chỉ thêm một lần.`); return;
+    }
+    seen.add(key);
+  }
+  hideError();
+
+  if (editingId !== null) {
+    const existing = tabOrders().find(o => o.id === editingId);
+    if (existing) existing.lines = lines;
+  } else {
+    const id  = T().nextId;
+    const tab = activeTab === 'fruits' ? 'Trái Cây' : 'Hoa';
+    tabOrders().push({ id, name: `Đơn ${tab} #${id}`, included: true, lines });
+    T().selectedId = id;
+    T().nextId++;
+  }
+  closeModal(); renderOrders(); renderInventory();
+}
+
+// ============================================================
+// SORT — wired once to #inventory-table thead
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('#inventory-table thead th[data-col]').forEach(th => {
     th.addEventListener('click', () => {
       const col = th.dataset.col;
-      if (sortState.col === col) {
-        if (sortState.dir === 'asc')        sortState.dir = 'desc';
-        else if (sortState.dir === 'desc') { sortState.col = null; sortState.dir = null; }
-        else                                sortState.dir = 'asc';
-      } else {
-        sortState.col = col; sortState.dir = 'asc';
-      }
+      const srt = T().sortState;
+      if (srt.col === col) {
+        if (srt.dir === 'asc')        srt.dir = 'desc';
+        else if (srt.dir === 'desc') { srt.col = null; srt.dir = null; }
+        else                          srt.dir = 'asc';
+      } else { srt.col = col; srt.dir = 'asc'; }
       document.querySelectorAll('#inventory-table thead th[data-col]').forEach(h => {
         h.classList.remove('sort-asc', 'sort-desc');
-        if (h.dataset.col === sortState.col)
-          h.classList.add(sortState.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+        if (h.dataset.col === srt.col) h.classList.add(srt.dir === 'asc' ? 'sort-asc' : 'sort-desc');
       });
       renderInventory();
     });
@@ -1263,319 +1584,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// selectNextOrder(removedIndex)
-// Called after an order is removed from the array.
-// Selects the order now at removedIndex, falling back to the
-// last order if removedIndex is out of range.
-// Sets selectedId = null when the list is empty.
-// Handles all cases:
-//   orders.length === 0       → selectedId = null
-//   removedIndex >= length    → clamp to last element
-//   removedIndex < 0 (never)  → Math.min resolves to 0
+// TAB SWITCHING — PATCH 4.4
+// Swapping activeTab re-renders both panels with that tab's data.
+// Body class drives CSS accent color changes.
 // ============================================================
-function selectNextOrder(removedIndex) {
-  if (orders.length === 0) { selectedId = null; return; }
-  const idx = Math.min(Math.max(removedIndex, 0), orders.length - 1);
-  selectedId = orders[idx].id;
-}
-
-// ============================================================
-// removeOrder(orderId)
-// Used by the Delete handler.
-// Returns the index the order occupied, or -1 if not found.
-// Guard prevents splice(-1,1) silently deleting the last element.
-// ============================================================
-function removeOrder(orderId) {
-  const idx = orders.findIndex(o => o.id === orderId);
-  if (idx === -1) return -1; // guard: order already gone
-  orders.splice(idx, 1);
-  return idx;
-}
-
-// ============================================================
-// RENDER ORDERS  — PATCH 4.3
-//
-// Cards are pure HTML — no per-element event listeners.
-// All interactions are handled by a SINGLE delegated listener
-// on #orders-list (wired once at the bottom of the script).
-// This completely eliminates attachment-timing, stale-closure,
-// and stopPropagation ordering issues.
-// ============================================================
-function renderOrders() {
-  const list       = document.getElementById('orders-list');
-  const emptyState = document.getElementById('empty-state');
-
-  // Remove existing cards (leave #empty-state in place)
-  [...list.querySelectorAll('.order-card')].forEach(el => el.remove());
-
-  if (orders.length === 0) {
-    emptyState.style.display = '';
-    selectedId = null;
-    renderInventory();
-    return;
-  }
-  emptyState.style.display = 'none';
-
-  orders.forEach(order => {
-    const card = document.createElement('div');
-    card.className = 'order-card'
-      + (order.included ? '' : ' excluded')
-      + (order.id === selectedId ? ' selected' : '');
-    card.dataset.id = String(order.id); // used by delegated handler
-
-    // Lines HTML
-    let linesHTML = '';
-    if (order.lines.length === 0) {
-      linesHTML = '<span class="empty-order">Đơn trống</span>';
-    } else {
-      linesHTML = order.lines.map(l => `
-        <div class="product-line">
-          <span class="line-product">${l.product}</span>
-          <span class="line-qty">×${l.qty}</span>
-          ${l.mutation ? `<span class="line-mutation">⚡ ${l.mutation}</span>` : ''}
-        </div>`).join('');
-    }
-
-    // All buttons carry data-order-id AND a data-action attribute.
-    // The delegated handler on #orders-list dispatches by data-action.
-    card.innerHTML = `
-      <div class="card-header">
-        <span class="card-title">${order.name}</span>
-        <span class="ready-badge">✅ Có thể hoàn thành</span>
-        <div class="card-controls">
-          <label class="include-label" title="Tính vào tổng">
-            <input type="checkbox" class="include-cb"
-                   data-order-id="${order.id}"
-                   ${order.included ? 'checked' : ''}/>
-            Tính vào tổng
-          </label>
-          <button class="btn-icon edit-btn"
-                  data-action="edit"
-                  data-order-id="${order.id}"
-                  title="Chỉnh sửa">✏️ Sửa</button>
-          <button class="btn-icon danger delete-btn"
-                  data-action="delete"
-                  data-order-id="${order.id}"
-                  title="Xóa đơn">🗑 Xóa</button>
-        </div>
-      </div>
-      <div class="card-body">${linesHTML}</div>
-    `;
-
-    list.appendChild(card);
+function switchTab(tab) {
+  if (tab === activeTab) return;
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
   });
-
-  updateReadyState();
-}
-
-// ============================================================
-// DELEGATED EVENT HANDLER — single listener on #orders-list
-// Handles: card-select, include-toggle, edit, delete.
-// Wired once at init; never needs to be re-attached.
-// ============================================================
-function initOrderListHandler() {
-  const list = document.getElementById('orders-list');
-
-  list.addEventListener('click', e => {
-    // ── Delete ────────────────────────────────────────────────
-    const deleteBtn = e.target.closest('[data-action="delete"]');
-    if (deleteBtn) {
-      const oid = parseInt(deleteBtn.dataset.orderId, 10);
-      if (isNaN(oid)) return;
-      const o = orders.find(x => x.id === oid);
-      if (!o) return;
-      if (!confirm(`Xóa "${o.name}"?`)) return;
-      const wasSelected = (selectedId === oid);
-      const idx = removeOrder(oid);
-      if (idx === -1) return;
-      if (wasSelected) selectNextOrder(idx);
-      renderOrders();
-      renderInventory();
-      return;
-    }
-
-    // ── Edit ──────────────────────────────────────────────────
-    const editBtn = e.target.closest('[data-action="edit"]');
-    if (editBtn) {
-      const oid = parseInt(editBtn.dataset.orderId, 10);
-      if (!isNaN(oid)) openModal(oid);
-      return;
-    }
-
-    // ── Include label / checkbox click — handled by 'change' below ─
-    if (e.target.closest('.include-label')) return;
-
-    // ── Card body → select order (ignore clicks inside controls) ─
-    if (e.target.closest('.card-controls')) return;
-    const card = e.target.closest('.order-card');
-    if (!card) return;
-    const oid = parseInt(card.dataset.id, 10);
-    if (isNaN(oid)) return;
-    selectedId = oid;
-    document.querySelectorAll('.order-card').forEach(c =>
-      c.classList.toggle('selected', parseInt(c.dataset.id, 10) === oid)
-    );
-    renderInventory();
+  // Body class drives flowers-specific CSS overrides
+  document.body.classList.toggle('flowers-active', tab === 'flowers');
+  // Sync sort indicator to new tab's sortState
+  const srt = T().sortState;
+  document.querySelectorAll('#inventory-table thead th[data-col]').forEach(h => {
+    h.classList.remove('sort-asc', 'sort-desc');
+    if (h.dataset.col === srt.col) h.classList.add(srt.dir === 'asc' ? 'sort-asc' : 'sort-desc');
   });
-
-  // Separate 'change' listener for the include checkbox — fires reliably
-  // whether the user clicks the checkbox directly or the label text.
-  list.addEventListener('change', e => {
-    const cb = e.target.closest('.include-cb');
-    if (!cb) return;
-    const oid = parseInt(cb.dataset.orderId, 10);
-    if (isNaN(oid)) return;
-    const o = orders.find(x => x.id === oid);
-    if (!o) return;
-    o.included = cb.checked;
-    const card = cb.closest('.order-card');
-    if (card) card.classList.toggle('excluded', !o.included);
-    renderInventory();
-  });
-}
-
-// ============================================================
-// MODAL — ADD / EDIT ORDER
-// ============================================================
-function openModal(orderId = null) {
-  editingId = orderId;
-  const overlay = document.getElementById('modal-overlay');
-  const body    = document.getElementById('modal-body');
-  const title   = document.getElementById('modal-title');
-
-  body.innerHTML = '';
-  hideError();
-
-  if (orderId !== null) {
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return; // guard
-    title.textContent = `Chỉnh sửa ${order.name}`;
-    order.lines.forEach(l => addModalLine(l));
-  } else {
-    title.textContent = 'Tạo đơn mới';
-    addModalLine();
-  }
-
-  const addLineBtn = document.createElement('button');
-  addLineBtn.className = 'btn-add-line';
-  addLineBtn.id = 'add-line-btn';
-  addLineBtn.textContent = '+ Thêm sản phẩm';
-  addLineBtn.addEventListener('click', () => {
-    body.insertBefore(createModalLine(null), addLineBtn);
-  });
-  body.appendChild(addLineBtn);
-
-  overlay.classList.add('open');
-  overlay.scrollTop = 0;
-}
-
-function addModalLine(data = null) {
-  const body   = document.getElementById('modal-body');
-  const addBtn = document.getElementById('add-line-btn');
-  const line   = createModalLine(data);
-  addBtn ? body.insertBefore(line, addBtn) : body.appendChild(line);
-}
-
-function createModalLine(data) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'modal-line';
-
-  const row1 = document.createElement('div');
-  row1.className = 'modal-line-row1';
-
-  const { wrapper: prodWrap, getValue: getProd } =
-    createSearchableDropdown(PRODUCT_LIST, data ? data.product : PRODUCT_LIST[0], 'Chọn sản phẩm…');
-  prodWrap.style.flex = '1';
-
-  const qtyInput = document.createElement('input');
-  qtyInput.type = 'number'; qtyInput.className = 'input-qty';
-  qtyInput.min = 0; qtyInput.value = data ? data.qty : 1;
-  qtyInput.placeholder = 'SL';
-
-  const removeBtn = document.createElement('button');
-  removeBtn.className = 'btn-icon danger';
-  removeBtn.textContent = '×'; removeBtn.title = 'Xóa dòng';
-  removeBtn.addEventListener('click', () => wrapper.remove());
-
-  row1.append(prodWrap, qtyInput, removeBtn);
-
-  const row2 = document.createElement('div');
-  row2.className = 'modal-line-row2';
-
-  const mutLabel = document.createElement('label');
-  mutLabel.className = 'mutation-check-label';
-  const mutCheck = document.createElement('input');
-  mutCheck.type = 'checkbox';
-  if (data && data.mutation) mutCheck.checked = true;
-  mutLabel.appendChild(mutCheck);
-  mutLabel.appendChild(document.createTextNode(' Có đột biến?'));
-
-  const { wrapper: mutWrap, getValue: getMut } =
-    createSearchableDropdown(MUTATIONS, data ? data.mutation : null, 'Chọn đột biến…');
-  mutWrap.classList.add('mut-wrap');
-
-  const syncMut = () => { mutWrap.style.display = mutCheck.checked ? '' : 'none'; };
-  mutCheck.addEventListener('change', syncMut);
-  syncMut();
-
-  row2.append(mutLabel, mutWrap);
-  wrapper.append(row1, row2);
-
-  wrapper._getData = () => ({
-    product:  getProd() || PRODUCT_LIST[0],
-    qty:      parseInt(qtyInput.value) || 0,
-    mutation: mutCheck.checked ? getMut() : null
-  });
-
-  return wrapper;
-}
-
-function closeModal() {
-  document.getElementById('modal-overlay').classList.remove('open');
-  document.querySelectorAll('.sd-popup.open').forEach(p => p.classList.remove('open'));
-  editingId = null;
-}
-function showError(msg) {
-  const el = document.getElementById('modal-error');
-  el.textContent = msg; el.classList.add('show');
-}
-function hideError() {
-  document.getElementById('modal-error').classList.remove('show');
-}
-
-function saveModal() {
-  const body    = document.getElementById('modal-body');
-  const lineEls = [...body.querySelectorAll('.modal-line')];
-
-  if (lineEls.length === 0) { showError('Đơn cần ít nhất một sản phẩm.'); return; }
-
-  const lines = lineEls.map(el => el._getData());
-
-  const seen = new Set();
-  for (const l of lines) {
-    if (seen.has(l.product)) {
-      showError(`Trùng sản phẩm "${l.product}"! Mỗi sản phẩm chỉ thêm một lần.`);
-      return;
-    }
-    seen.add(l.product);
-  }
-
-  hideError();
-
-  if (editingId !== null) {
-    const existing = orders.find(o => o.id === editingId);
-    if (existing) existing.lines = lines;
-  } else {
-    const newOrder = { id: nextId, name: `Đơn #${nextId}`, included: true, lines };
-    orders.push(newOrder);
-    selectedId = nextId;
-    nextId++;
-  }
-
-  closeModal();
   renderOrders();
   renderInventory();
 }
+
+document.getElementById('tab-fruits').addEventListener('click',   () => switchTab('fruits'));
+document.getElementById('tab-flowers').addEventListener('click',  () => switchTab('flowers'));
 
 // ============================================================
 // GLOBAL EVENT LISTENERS
@@ -1583,14 +1615,12 @@ function saveModal() {
 document.getElementById('add-order-btn').addEventListener('click', () => openModal());
 document.getElementById('modal-cancel').addEventListener('click', closeModal);
 document.getElementById('modal-save').addEventListener('click', saveModal);
-document.getElementById('modal-overlay').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closeModal();
-});
+document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 
 // ============================================================
 // INIT
 // ============================================================
-initOrderListHandler(); // wire delegated click handler once
+initOrderListHandler(); // delegated handler wired once
 renderOrders();
 renderInventory();
 </script>
